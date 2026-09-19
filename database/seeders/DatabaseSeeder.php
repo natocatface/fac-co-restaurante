@@ -17,7 +17,6 @@ class DatabaseSeeder extends Seeder
         // 0. Settings y series SUNAT
         $this->call([
             SettingSeeder::class,
-            DocumentSeriesSeeder::class,
         ]);
 
         // 1. Crear Usuario Admin

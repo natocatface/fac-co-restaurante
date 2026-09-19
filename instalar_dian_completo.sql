@@ -1,0 +1,2025 @@
+-- ============================================================
+-- INSTALADOR DEFINITIVO – col_restaurante_db + DIAN Colombia
+-- ============================================================
+-- Este archivo hace TODO de una sola pasada:
+--   1) Borra y recrea la base col_restaurante_db
+--   2) Importa todo el backup (datos previos del restaurante)
+--   3) Aplica los cambios de esquema DIAN (drop SUNAT, create DIAN)
+--   4) Inserta los settings DIAN por defecto
+--   5) Registra todas las migraciones como completadas
+--
+-- USO:
+--   mysql -u root < instalar_dian_completo.sql
+--   (lo ejecuta el .bat o lo puedes pegar en HeidiSQL/phpMyAdmin)
+-- ============================================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET NAMES utf8mb4;
+
+DROP DATABASE IF EXISTS `col_restaurante_db`;
+CREATE DATABASE `col_restaurante_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `col_restaurante_db`;
+
+-- ============================================================
+-- BLOQUE 1/3: BACKUP COMPLETO
+-- ============================================================
+-- --------------------------------------------------------
+-- Host:                         127.0.0.1
+-- Versión del servidor:         8.4.3 - MySQL Community Server - GPL
+-- SO del servidor:              Win64
+-- HeidiSQL Versión:             12.8.0.6908
+-- --------------------------------------------------------
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+-- Volcando estructura en la base de datos col_restaurante_db
+-- (las siguientes lineas, originales del backup, se reemplazan para forzar
+--  que TODO el esquema se cree dentro de col_restaurante_db y no en restaurante_db)
+-- CREATE DATABASE IF NOT EXISTS `restaurante_db` ...;
+-- USE `restaurante_db`;
+USE `col_restaurante_db`;
+
+-- Volcando estructura para tabla restaurante_db.areas
+CREATE TABLE IF NOT EXISTS `areas` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.areas: ~2 rows (aproximadamente)
+DELETE FROM `areas`;
+INSERT INTO `areas` (`id`, `name`, `created_at`, `updated_at`) VALUES
+	(1, 'Salón Principal', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(2, 'Terraza', '2026-05-01 23:25:48', '2026-05-01 23:25:48');
+
+-- Volcando estructura para tabla restaurante_db.cache
+CREATE TABLE IF NOT EXISTS `cache` (
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.cache: ~0 rows (aproximadamente)
+DELETE FROM `cache`;
+
+-- Volcando estructura para tabla restaurante_db.cache_locks
+CREATE TABLE IF NOT EXISTS `cache_locks` (
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.cache_locks: ~0 rows (aproximadamente)
+DELETE FROM `cache_locks`;
+
+-- Volcando estructura para tabla restaurante_db.cash_registers
+CREATE TABLE IF NOT EXISTS `cash_registers` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `opening_time` datetime NOT NULL,
+  `closing_time` datetime DEFAULT NULL,
+  `opening_amount` decimal(10,2) NOT NULL,
+  `closing_amount` decimal(10,2) DEFAULT NULL,
+  `expected_amount` decimal(10,2) DEFAULT NULL,
+  `difference` decimal(10,2) DEFAULT NULL,
+  `status` enum('open','closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cash_registers_user_id_foreign` (`user_id`),
+  CONSTRAINT `cash_registers_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.cash_registers: ~0 rows (aproximadamente)
+DELETE FROM `cash_registers`;
+INSERT INTO `cash_registers` (`id`, `user_id`, `opening_time`, `closing_time`, `opening_amount`, `closing_amount`, `expected_amount`, `difference`, `status`, `notes`, `created_at`, `updated_at`) VALUES
+	(1, 1, '2026-05-03 00:48:26', NULL, 0.00, NULL, NULL, NULL, 'open', NULL, '2026-05-03 05:48:26', '2026-05-03 05:48:26');
+
+-- Volcando estructura para tabla restaurante_db.categories
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.categories: ~10 rows (aproximadamente)
+DELETE FROM `categories`;
+INSERT INTO `categories` (`id`, `name`, `image`, `is_active`, `created_at`, `updated_at`) VALUES
+	(1, 'Entradas', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(2, 'Platos Fuertes', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(3, 'Bebidas Frías', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(4, 'Bebidas Calientes', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(5, 'Postres', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(6, 'Ensaladas', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(7, 'Sopas', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(8, 'Pizzas', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(9, 'Hamburguesas', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(10, 'Especialidades', NULL, 1, '2026-05-01 23:25:46', '2026-05-01 23:25:46');
+
+-- Volcando estructura para tabla restaurante_db.clients
+CREATE TABLE IF NOT EXISTS `clients` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'DNI',
+  `document_number` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `clients_document_number_unique` (`document_number`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.clients: ~10 rows (aproximadamente)
+DELETE FROM `clients`;
+INSERT INTO `clients` (`id`, `name`, `document_type`, `document_number`, `email`, `phone`, `address`, `created_at`, `updated_at`) VALUES
+	(1, 'Cliente Frecuente 1', 'DNI', '70000001', 'cliente1@correo.com', '999888771', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(2, 'Cliente Frecuente 2', 'DNI', '70000002', 'cliente2@correo.com', '999888772', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(3, 'Cliente Frecuente 3', 'DNI', '70000003', 'cliente3@correo.com', '999888773', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(4, 'Cliente Frecuente 4', 'DNI', '70000004', 'cliente4@correo.com', '999888774', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(5, 'Cliente Frecuente 5', 'DNI', '70000005', 'cliente5@correo.com', '999888775', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(6, 'Cliente Frecuente 6', 'DNI', '70000006', 'cliente6@correo.com', '999888776', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(7, 'Cliente Frecuente 7', 'DNI', '70000007', 'cliente7@correo.com', '999888777', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(8, 'Cliente Frecuente 8', 'DNI', '70000008', 'cliente8@correo.com', '999888778', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(9, 'Cliente Frecuente 9', 'DNI', '70000009', 'cliente9@correo.com', '999888779', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(10, 'Cliente Frecuente 10', 'DNI', '70000010', 'cliente10@correo.com', '9998887710', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48');
+
+-- Volcando estructura para tabla restaurante_db.credit_notes
+CREATE TABLE IF NOT EXISTS `credit_notes` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` bigint unsigned NOT NULL,
+  `serie` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `correlativo` int unsigned NOT NULL,
+  `document_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'nota_credito',
+  `reason_code` varchar(2) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reason_description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `igv` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `sunat_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
+  `sunat_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sunat_description` text COLLATE utf8mb4_unicode_ci,
+  `xml_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cdr_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hash` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `credit_notes_serie_corr_unique` (`serie`,`correlativo`),
+  KEY `credit_notes_order_id_foreign` (`order_id`),
+  KEY `credit_notes_user_id_foreign` (`user_id`),
+  CONSTRAINT `credit_notes_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `credit_notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.credit_notes: ~0 rows (aproximadamente)
+DELETE FROM `credit_notes`;
+
+-- Volcando estructura para tabla restaurante_db.daily_summaries
+CREATE TABLE IF NOT EXISTS `daily_summaries` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `reference_date` date NOT NULL,
+  `generation_date` date NOT NULL,
+  `correlativo` int unsigned NOT NULL,
+  `identifier` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `total_documents` int unsigned NOT NULL DEFAULT '0',
+  `total_amount` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `sunat_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
+  `ticket` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sunat_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sunat_description` text COLLATE utf8mb4_unicode_ci,
+  `xml_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cdr_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hash` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `consulted_at` timestamp NULL DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `daily_summaries_date_corr_unique` (`reference_date`,`correlativo`),
+  KEY `daily_summaries_user_id_foreign` (`user_id`),
+  CONSTRAINT `daily_summaries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.daily_summaries: ~0 rows (aproximadamente)
+DELETE FROM `daily_summaries`;
+
+-- Volcando estructura para tabla restaurante_db.deliveries
+CREATE TABLE IF NOT EXISTS `deliveries` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` bigint unsigned NOT NULL,
+  `client_id` bigint unsigned DEFAULT NULL,
+  `client_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `client_phone` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `address` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `driver_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `cash_register_id` bigint unsigned DEFAULT NULL,
+  `status` enum('pending','preparing','on_way','delivered','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `payment_method` enum('cash','card','transfer') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `delivery_fee` decimal(8,2) NOT NULL DEFAULT '0.00',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `scheduled_at` timestamp NULL DEFAULT NULL,
+  `delivered_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `deliveries_order_id_foreign` (`order_id`),
+  KEY `deliveries_client_id_foreign` (`client_id`),
+  KEY `deliveries_driver_id_foreign` (`driver_id`),
+  KEY `deliveries_user_id_foreign` (`user_id`),
+  KEY `deliveries_cash_register_id_foreign` (`cash_register_id`),
+  CONSTRAINT `deliveries_cash_register_id_foreign` FOREIGN KEY (`cash_register_id`) REFERENCES `cash_registers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deliveries_client_id_foreign` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deliveries_driver_id_foreign` FOREIGN KEY (`driver_id`) REFERENCES `delivery_drivers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deliveries_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `deliveries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.deliveries: ~0 rows (aproximadamente)
+DELETE FROM `deliveries`;
+INSERT INTO `deliveries` (`id`, `order_id`, `client_id`, `client_name`, `client_phone`, `address`, `reference`, `driver_id`, `user_id`, `cash_register_id`, `status`, `payment_method`, `delivery_fee`, `notes`, `scheduled_at`, `delivered_at`, `created_at`, `updated_at`) VALUES
+	(1, 158, NULL, 'Carlos Delivery', '999888777', 'Av. Principal 456', NULL, NULL, 1, 1, 'pending', 'cash', 0.00, NULL, NULL, NULL, '2026-05-03 07:05:38', '2026-05-03 07:05:38');
+
+-- Volcando estructura para tabla restaurante_db.delivery_drivers
+CREATE TABLE IF NOT EXISTS `delivery_drivers` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.delivery_drivers: ~0 rows (aproximadamente)
+DELETE FROM `delivery_drivers`;
+
+-- Volcando estructura para tabla restaurante_db.document_series
+CREATE TABLE IF NOT EXISTS `document_series` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `document_code` varchar(2) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `serie` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_number` int unsigned NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `document_series_serie_unique` (`serie`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.document_series: ~4 rows (aproximadamente)
+DELETE FROM `document_series`;
+INSERT INTO `document_series` (`id`, `document_code`, `document_type`, `serie`, `last_number`, `is_active`, `created_at`, `updated_at`) VALUES
+	(1, '03', 'boleta', 'B001', 8, 1, '2026-05-17 23:28:33', '2026-05-18 07:13:53'),
+	(2, '01', 'factura', 'F001', 0, 1, '2026-05-17 23:28:33', '2026-05-17 23:28:33'),
+	(3, '07', 'nota_credito_boleta', 'BC01', 0, 1, '2026-05-17 23:28:33', '2026-05-17 23:28:33'),
+	(4, '07', 'nota_credito_factura', 'FC01', 0, 1, '2026-05-17 23:28:33', '2026-05-17 23:28:33');
+
+-- Volcando estructura para tabla restaurante_db.expenses
+CREATE TABLE IF NOT EXISTS `expenses` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `cash_register_id` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `expenses_user_id_foreign` (`user_id`),
+  KEY `expenses_cash_register_id_foreign` (`cash_register_id`),
+  CONSTRAINT `expenses_cash_register_id_foreign` FOREIGN KEY (`cash_register_id`) REFERENCES `cash_registers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `expenses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.expenses: ~10 rows (aproximadamente)
+DELETE FROM `expenses`;
+INSERT INTO `expenses` (`id`, `description`, `amount`, `user_id`, `created_at`, `updated_at`, `cash_register_id`) VALUES
+	(1, 'Compra de verduras', 263.00, 1, '2026-04-23 23:25:46', '2026-05-01 23:25:48', NULL),
+	(2, 'Pago de luz', 184.00, 1, '2026-04-03 23:25:46', '2026-05-01 23:25:48', NULL),
+	(3, 'Compra de carnes', 206.00, 1, '2026-04-24 23:25:46', '2026-05-01 23:25:48', NULL),
+	(4, 'Mantenimiento', 270.00, 1, '2026-04-22 23:25:46', '2026-05-01 23:25:48', NULL),
+	(5, 'Artículos limpieza', 169.00, 1, '2026-04-26 23:25:46', '2026-05-01 23:25:48', NULL),
+	(6, 'Pago de agua', 256.00, 1, '2026-04-10 23:25:46', '2026-05-01 23:25:48', NULL),
+	(7, 'Publicidad', 106.00, 1, '2026-04-09 23:25:46', '2026-05-01 23:25:48', NULL),
+	(8, 'Compra de bebidas', 159.00, 1, '2026-04-01 23:25:46', '2026-05-01 23:25:48', NULL),
+	(9, 'Gas', 278.00, 1, '2026-04-30 23:25:46', '2026-05-01 23:25:48', NULL),
+	(10, 'Transporte', 297.00, 1, '2026-04-20 23:25:46', '2026-05-01 23:25:48', NULL);
+
+-- Volcando estructura para tabla restaurante_db.failed_jobs
+CREATE TABLE IF NOT EXISTS `failed_jobs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.failed_jobs: ~0 rows (aproximadamente)
+DELETE FROM `failed_jobs`;
+
+-- Volcando estructura para tabla restaurante_db.inventory_logs
+CREATE TABLE IF NOT EXISTS `inventory_logs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `old_stock` int DEFAULT NULL,
+  `new_stock` int DEFAULT NULL,
+  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `inventory_logs_product_id_foreign` (`product_id`),
+  KEY `inventory_logs_user_id_foreign` (`user_id`),
+  CONSTRAINT `inventory_logs_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inventory_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=406 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.inventory_logs: ~400 rows (aproximadamente)
+DELETE FROM `inventory_logs`;
+INSERT INTO `inventory_logs` (`id`, `product_id`, `user_id`, `type`, `quantity`, `old_stock`, `new_stock`, `note`, `created_at`, `updated_at`) VALUES
+	(1, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #1', '2026-01-17 23:25:46', '2026-05-01 23:25:48'),
+	(2, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #1', '2026-01-17 23:25:46', '2026-05-01 23:25:48'),
+	(3, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #2', '2025-05-14 23:25:46', '2026-05-01 23:25:48'),
+	(4, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #2', '2025-05-14 23:25:46', '2026-05-01 23:25:48'),
+	(5, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #2', '2025-05-14 23:25:46', '2026-05-01 23:25:48'),
+	(6, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #2', '2025-05-14 23:25:46', '2026-05-01 23:25:48'),
+	(7, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #3', '2025-08-30 23:25:46', '2026-05-01 23:25:48'),
+	(8, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #3', '2025-08-30 23:25:46', '2026-05-01 23:25:48'),
+	(9, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #4', '2026-04-20 23:25:46', '2026-05-01 23:25:48'),
+	(10, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #5', '2026-03-01 23:25:46', '2026-05-01 23:25:48'),
+	(11, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #5', '2026-03-01 23:25:46', '2026-05-01 23:25:48'),
+	(12, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #6', '2026-01-12 23:25:46', '2026-05-01 23:25:48'),
+	(13, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #6', '2026-01-12 23:25:46', '2026-05-01 23:25:48'),
+	(14, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #6', '2026-01-12 23:25:46', '2026-05-01 23:25:48'),
+	(15, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #7', '2026-02-21 23:25:46', '2026-05-01 23:25:48'),
+	(16, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #7', '2026-02-21 23:25:46', '2026-05-01 23:25:48'),
+	(17, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #7', '2026-02-21 23:25:46', '2026-05-01 23:25:48'),
+	(18, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #8', '2026-04-18 23:25:46', '2026-05-01 23:25:48'),
+	(19, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #8', '2026-04-18 23:25:46', '2026-05-01 23:25:48'),
+	(20, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #9', '2025-06-25 23:25:46', '2026-05-01 23:25:48'),
+	(21, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #9', '2025-06-25 23:25:46', '2026-05-01 23:25:48'),
+	(22, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #10', '2026-02-06 23:25:46', '2026-05-01 23:25:48'),
+	(23, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #10', '2026-02-06 23:25:46', '2026-05-01 23:25:48'),
+	(24, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #10', '2026-02-06 23:25:46', '2026-05-01 23:25:48'),
+	(25, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #10', '2026-02-06 23:25:46', '2026-05-01 23:25:48'),
+	(26, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #11', '2026-04-22 23:25:46', '2026-05-01 23:25:48'),
+	(27, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #11', '2026-04-22 23:25:46', '2026-05-01 23:25:48'),
+	(28, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #11', '2026-04-22 23:25:46', '2026-05-01 23:25:48'),
+	(29, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #11', '2026-04-22 23:25:46', '2026-05-01 23:25:48'),
+	(30, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #12', '2025-12-30 23:25:46', '2026-05-01 23:25:48'),
+	(31, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #13', '2025-07-12 23:25:46', '2026-05-01 23:25:48'),
+	(32, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #13', '2025-07-12 23:25:46', '2026-05-01 23:25:48'),
+	(33, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #13', '2025-07-12 23:25:46', '2026-05-01 23:25:48'),
+	(34, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #13', '2025-07-12 23:25:46', '2026-05-01 23:25:48'),
+	(35, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #14', '2026-04-29 23:25:46', '2026-05-01 23:25:48'),
+	(36, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #14', '2026-04-29 23:25:46', '2026-05-01 23:25:48'),
+	(37, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #14', '2026-04-29 23:25:46', '2026-05-01 23:25:48'),
+	(38, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #14', '2026-04-29 23:25:46', '2026-05-01 23:25:48'),
+	(39, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #15', '2025-09-01 23:25:46', '2026-05-01 23:25:48'),
+	(40, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #15', '2025-09-01 23:25:46', '2026-05-01 23:25:48'),
+	(41, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #15', '2025-09-01 23:25:46', '2026-05-01 23:25:48'),
+	(42, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #16', '2026-01-11 23:25:46', '2026-05-01 23:25:48'),
+	(43, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #16', '2026-01-11 23:25:46', '2026-05-01 23:25:48'),
+	(44, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #16', '2026-01-11 23:25:46', '2026-05-01 23:25:48'),
+	(45, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #16', '2026-01-11 23:25:46', '2026-05-01 23:25:48'),
+	(46, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #17', '2026-04-10 23:25:46', '2026-05-01 23:25:48'),
+	(47, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #17', '2026-04-10 23:25:46', '2026-05-01 23:25:48'),
+	(48, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #17', '2026-04-10 23:25:46', '2026-05-01 23:25:48'),
+	(49, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #17', '2026-04-10 23:25:46', '2026-05-01 23:25:48'),
+	(50, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #18', '2025-12-10 23:25:46', '2026-05-01 23:25:48'),
+	(51, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #18', '2025-12-10 23:25:46', '2026-05-01 23:25:49'),
+	(52, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #19', '2025-08-06 23:25:46', '2026-05-01 23:25:49'),
+	(53, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #19', '2025-08-06 23:25:46', '2026-05-01 23:25:49'),
+	(54, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #19', '2025-08-06 23:25:46', '2026-05-01 23:25:49'),
+	(55, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #20', '2025-07-19 23:25:46', '2026-05-01 23:25:49'),
+	(56, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #21', '2025-07-23 23:25:46', '2026-05-01 23:25:49'),
+	(57, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #21', '2025-07-23 23:25:46', '2026-05-01 23:25:49'),
+	(58, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #21', '2025-07-23 23:25:46', '2026-05-01 23:25:49'),
+	(59, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #21', '2025-07-23 23:25:46', '2026-05-01 23:25:49'),
+	(60, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #22', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(61, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #22', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(62, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #22', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(63, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #22', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(64, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #23', '2025-10-25 23:25:46', '2026-05-01 23:25:49'),
+	(65, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #23', '2025-10-25 23:25:46', '2026-05-01 23:25:49'),
+	(66, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #24', '2025-07-02 23:25:46', '2026-05-01 23:25:49'),
+	(67, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #24', '2025-07-02 23:25:46', '2026-05-01 23:25:49'),
+	(68, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #25', '2025-10-15 23:25:46', '2026-05-01 23:25:49'),
+	(69, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #25', '2025-10-15 23:25:46', '2026-05-01 23:25:49'),
+	(70, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #25', '2025-10-15 23:25:46', '2026-05-01 23:25:49'),
+	(71, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #25', '2025-10-15 23:25:46', '2026-05-01 23:25:49'),
+	(72, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #26', '2026-03-13 23:25:46', '2026-05-01 23:25:49'),
+	(73, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #27', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(74, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #27', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(75, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #27', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(76, 7, 1, 'sale', -1, NULL, NULL, 'Venta Orden #27', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(77, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #28', '2025-12-21 23:25:46', '2026-05-01 23:25:49'),
+	(78, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #28', '2025-12-21 23:25:46', '2026-05-01 23:25:49'),
+	(79, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #28', '2025-12-21 23:25:46', '2026-05-01 23:25:49'),
+	(80, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #29', '2025-07-09 23:25:46', '2026-05-01 23:25:49'),
+	(81, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #29', '2025-07-09 23:25:46', '2026-05-01 23:25:49'),
+	(82, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #29', '2025-07-09 23:25:46', '2026-05-01 23:25:49'),
+	(83, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #30', '2025-10-21 23:25:46', '2026-05-01 23:25:49'),
+	(84, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #30', '2025-10-21 23:25:46', '2026-05-01 23:25:49'),
+	(85, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #31', '2025-08-02 23:25:46', '2026-05-01 23:25:49'),
+	(86, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #32', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(87, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #32', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(88, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #32', '2025-05-29 23:25:46', '2026-05-01 23:25:49'),
+	(89, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #33', '2025-11-20 23:25:46', '2026-05-01 23:25:49'),
+	(90, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #33', '2025-11-20 23:25:46', '2026-05-01 23:25:49'),
+	(91, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #33', '2025-11-20 23:25:46', '2026-05-01 23:25:49'),
+	(92, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #34', '2025-06-03 23:25:46', '2026-05-01 23:25:49'),
+	(93, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #34', '2025-06-03 23:25:46', '2026-05-01 23:25:49'),
+	(94, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #34', '2025-06-03 23:25:46', '2026-05-01 23:25:49'),
+	(95, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #35', '2025-12-30 23:25:46', '2026-05-01 23:25:49'),
+	(96, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #36', '2025-06-06 23:25:46', '2026-05-01 23:25:49'),
+	(97, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #36', '2025-06-06 23:25:46', '2026-05-01 23:25:49'),
+	(98, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #37', '2026-03-31 23:25:46', '2026-05-01 23:25:49'),
+	(99, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #37', '2026-03-31 23:25:46', '2026-05-01 23:25:49'),
+	(100, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #37', '2026-03-31 23:25:46', '2026-05-01 23:25:49'),
+	(101, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #37', '2026-03-31 23:25:46', '2026-05-01 23:25:49'),
+	(102, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #38', '2025-10-07 23:25:46', '2026-05-01 23:25:49'),
+	(103, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #39', '2025-06-27 23:25:46', '2026-05-01 23:25:49'),
+	(104, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #39', '2025-06-27 23:25:46', '2026-05-01 23:25:49'),
+	(105, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #40', '2026-02-24 23:25:46', '2026-05-01 23:25:49'),
+	(106, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #40', '2026-02-24 23:25:46', '2026-05-01 23:25:49'),
+	(107, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #41', '2025-06-09 23:25:46', '2026-05-01 23:25:49'),
+	(108, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #41', '2025-06-09 23:25:46', '2026-05-01 23:25:49'),
+	(109, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #41', '2025-06-09 23:25:46', '2026-05-01 23:25:49'),
+	(110, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #42', '2025-08-17 23:25:46', '2026-05-01 23:25:49'),
+	(111, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #42', '2025-08-17 23:25:46', '2026-05-01 23:25:49'),
+	(112, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #42', '2025-08-17 23:25:46', '2026-05-01 23:25:49'),
+	(113, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #43', '2026-03-16 23:25:46', '2026-05-01 23:25:49'),
+	(114, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #43', '2026-03-16 23:25:46', '2026-05-01 23:25:49'),
+	(115, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #43', '2026-03-16 23:25:46', '2026-05-01 23:25:49'),
+	(116, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #43', '2026-03-16 23:25:46', '2026-05-01 23:25:49'),
+	(117, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #44', '2025-09-15 23:25:46', '2026-05-01 23:25:49'),
+	(118, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #44', '2025-09-15 23:25:46', '2026-05-01 23:25:49'),
+	(119, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #44', '2025-09-15 23:25:46', '2026-05-01 23:25:49'),
+	(120, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #44', '2025-09-15 23:25:46', '2026-05-01 23:25:49'),
+	(121, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #45', '2026-03-03 23:25:46', '2026-05-01 23:25:49'),
+	(122, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #45', '2026-03-03 23:25:46', '2026-05-01 23:25:49'),
+	(123, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #45', '2026-03-03 23:25:46', '2026-05-01 23:25:49'),
+	(124, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #45', '2026-03-03 23:25:46', '2026-05-01 23:25:49'),
+	(125, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #46', '2026-03-18 23:25:46', '2026-05-01 23:25:49'),
+	(126, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #46', '2026-03-18 23:25:46', '2026-05-01 23:25:49'),
+	(127, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #46', '2026-03-18 23:25:46', '2026-05-01 23:25:49'),
+	(128, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #46', '2026-03-18 23:25:46', '2026-05-01 23:25:49'),
+	(129, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #47', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(130, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #47', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(131, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #47', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(132, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #47', '2026-04-23 23:25:46', '2026-05-01 23:25:49'),
+	(133, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #48', '2025-05-08 23:25:46', '2026-05-01 23:25:49'),
+	(134, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #48', '2025-05-08 23:25:46', '2026-05-01 23:25:49'),
+	(135, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #49', '2025-10-06 23:25:46', '2026-05-01 23:25:49'),
+	(136, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #49', '2025-10-06 23:25:46', '2026-05-01 23:25:49'),
+	(137, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #49', '2025-10-06 23:25:46', '2026-05-01 23:25:49'),
+	(138, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #50', '2025-09-23 23:25:46', '2026-05-01 23:25:49'),
+	(139, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #50', '2025-09-23 23:25:46', '2026-05-01 23:25:49'),
+	(140, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #50', '2025-09-23 23:25:46', '2026-05-01 23:25:49'),
+	(141, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #50', '2025-09-23 23:25:46', '2026-05-01 23:25:49'),
+	(142, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #51', '2025-12-26 23:25:46', '2026-05-01 23:25:49'),
+	(143, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #51', '2025-12-26 23:25:46', '2026-05-01 23:25:49'),
+	(144, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #51', '2025-12-26 23:25:46', '2026-05-01 23:25:49'),
+	(145, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #52', '2025-10-05 23:25:46', '2026-05-01 23:25:49'),
+	(146, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #53', '2025-05-25 23:25:46', '2026-05-01 23:25:49'),
+	(147, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #53', '2025-05-25 23:25:46', '2026-05-01 23:25:49'),
+	(148, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #54', '2026-02-05 23:25:46', '2026-05-01 23:25:49'),
+	(149, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #54', '2026-02-05 23:25:46', '2026-05-01 23:25:49'),
+	(150, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #54', '2026-02-05 23:25:46', '2026-05-01 23:25:49'),
+	(151, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #54', '2026-02-05 23:25:46', '2026-05-01 23:25:49'),
+	(152, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #55', '2025-07-18 23:25:46', '2026-05-01 23:25:49'),
+	(153, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #55', '2025-07-18 23:25:46', '2026-05-01 23:25:49'),
+	(154, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #55', '2025-07-18 23:25:46', '2026-05-01 23:25:49'),
+	(155, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #55', '2025-07-18 23:25:46', '2026-05-01 23:25:49'),
+	(156, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #56', '2025-11-30 23:25:46', '2026-05-01 23:25:49'),
+	(157, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #57', '2026-03-27 23:25:46', '2026-05-01 23:25:49'),
+	(158, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #57', '2026-03-27 23:25:46', '2026-05-01 23:25:49'),
+	(159, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #58', '2025-10-20 23:25:46', '2026-05-01 23:25:49'),
+	(160, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #59', '2025-09-29 23:25:46', '2026-05-01 23:25:49'),
+	(161, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #59', '2025-09-29 23:25:46', '2026-05-01 23:25:50'),
+	(162, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #59', '2025-09-29 23:25:46', '2026-05-01 23:25:50'),
+	(163, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #59', '2025-09-29 23:25:46', '2026-05-01 23:25:50'),
+	(164, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #60', '2026-02-22 23:25:46', '2026-05-01 23:25:50'),
+	(165, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #60', '2026-02-22 23:25:46', '2026-05-01 23:25:50'),
+	(166, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #60', '2026-02-22 23:25:46', '2026-05-01 23:25:50'),
+	(167, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #60', '2026-02-22 23:25:46', '2026-05-01 23:25:50'),
+	(168, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #61', '2025-05-17 23:25:46', '2026-05-01 23:25:50'),
+	(169, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #61', '2025-05-17 23:25:46', '2026-05-01 23:25:50'),
+	(170, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #61', '2025-05-17 23:25:46', '2026-05-01 23:25:50'),
+	(171, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #62', '2025-11-21 23:25:46', '2026-05-01 23:25:50'),
+	(172, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #62', '2025-11-21 23:25:46', '2026-05-01 23:25:50'),
+	(173, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #63', '2026-01-08 23:25:46', '2026-05-01 23:25:50'),
+	(174, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #63', '2026-01-08 23:25:46', '2026-05-01 23:25:50'),
+	(175, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #63', '2026-01-08 23:25:46', '2026-05-01 23:25:50'),
+	(176, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #63', '2026-01-08 23:25:46', '2026-05-01 23:25:50'),
+	(177, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #64', '2026-01-16 23:25:46', '2026-05-01 23:25:50'),
+	(178, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #64', '2026-01-16 23:25:46', '2026-05-01 23:25:50'),
+	(179, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #65', '2025-05-07 23:25:46', '2026-05-01 23:25:50'),
+	(180, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #65', '2025-05-07 23:25:46', '2026-05-01 23:25:50'),
+	(181, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #65', '2025-05-07 23:25:46', '2026-05-01 23:25:50'),
+	(182, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #65', '2025-05-07 23:25:46', '2026-05-01 23:25:50'),
+	(183, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #66', '2025-06-17 23:25:46', '2026-05-01 23:25:50'),
+	(184, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #66', '2025-06-17 23:25:46', '2026-05-01 23:25:50'),
+	(185, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #66', '2025-06-17 23:25:46', '2026-05-01 23:25:50'),
+	(186, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #67', '2025-09-22 23:25:46', '2026-05-01 23:25:50'),
+	(187, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #67', '2025-09-22 23:25:46', '2026-05-01 23:25:50'),
+	(188, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #68', '2025-10-17 23:25:46', '2026-05-01 23:25:50'),
+	(189, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #69', '2025-11-05 23:25:46', '2026-05-01 23:25:50'),
+	(190, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #70', '2025-08-06 23:25:46', '2026-05-01 23:25:50'),
+	(191, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #70', '2025-08-06 23:25:46', '2026-05-01 23:25:50'),
+	(192, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #71', '2025-06-12 23:25:46', '2026-05-01 23:25:50'),
+	(193, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #72', '2025-05-12 23:25:46', '2026-05-01 23:25:50'),
+	(194, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #73', '2025-08-16 23:25:46', '2026-05-01 23:25:50'),
+	(195, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #73', '2025-08-16 23:25:46', '2026-05-01 23:25:50'),
+	(196, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #73', '2025-08-16 23:25:46', '2026-05-01 23:25:50'),
+	(197, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #74', '2025-11-09 23:25:46', '2026-05-01 23:25:50'),
+	(198, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #74', '2025-11-09 23:25:46', '2026-05-01 23:25:50'),
+	(199, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #74', '2025-11-09 23:25:46', '2026-05-01 23:25:50'),
+	(200, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #75', '2025-09-25 23:25:46', '2026-05-01 23:25:50'),
+	(201, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #75', '2025-09-25 23:25:46', '2026-05-01 23:25:50'),
+	(202, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #75', '2025-09-25 23:25:46', '2026-05-01 23:25:50'),
+	(203, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #75', '2025-09-25 23:25:46', '2026-05-01 23:25:50'),
+	(204, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #76', '2025-10-13 23:25:46', '2026-05-01 23:25:50'),
+	(205, 7, 1, 'sale', -1, NULL, NULL, 'Venta Orden #76', '2025-10-13 23:25:46', '2026-05-01 23:25:50'),
+	(206, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #77', '2026-04-09 23:25:46', '2026-05-01 23:25:50'),
+	(207, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #77', '2026-04-09 23:25:46', '2026-05-01 23:25:50'),
+	(208, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #78', '2025-05-10 23:25:46', '2026-05-01 23:25:50'),
+	(209, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #78', '2025-05-10 23:25:46', '2026-05-01 23:25:50'),
+	(210, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #78', '2025-05-10 23:25:46', '2026-05-01 23:25:50'),
+	(211, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #79', '2025-09-08 23:25:46', '2026-05-01 23:25:50'),
+	(212, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #79', '2025-09-08 23:25:46', '2026-05-01 23:25:50'),
+	(213, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #79', '2025-09-08 23:25:46', '2026-05-01 23:25:50'),
+	(214, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #80', '2025-09-14 23:25:46', '2026-05-01 23:25:50'),
+	(215, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #80', '2025-09-14 23:25:46', '2026-05-01 23:25:50'),
+	(216, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #81', '2026-03-28 23:25:46', '2026-05-01 23:25:50'),
+	(217, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #81', '2026-03-28 23:25:46', '2026-05-01 23:25:50'),
+	(218, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #82', '2025-07-11 23:25:46', '2026-05-01 23:25:50'),
+	(219, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #83', '2026-04-28 23:25:46', '2026-05-01 23:25:50'),
+	(220, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #84', '2025-12-30 23:25:46', '2026-05-01 23:25:50'),
+	(221, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #84', '2025-12-30 23:25:46', '2026-05-01 23:25:50'),
+	(222, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #85', '2025-12-24 23:25:46', '2026-05-01 23:25:50'),
+	(223, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #85', '2025-12-24 23:25:46', '2026-05-01 23:25:50'),
+	(224, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #86', '2026-01-21 23:25:46', '2026-05-01 23:25:50'),
+	(225, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #86', '2026-01-21 23:25:46', '2026-05-01 23:25:50'),
+	(226, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #87', '2025-11-28 23:25:46', '2026-05-01 23:25:50'),
+	(227, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #87', '2025-11-28 23:25:46', '2026-05-01 23:25:50'),
+	(228, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #88', '2026-04-11 23:25:46', '2026-05-01 23:25:50'),
+	(229, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #88', '2026-04-11 23:25:46', '2026-05-01 23:25:50'),
+	(230, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #88', '2026-04-11 23:25:46', '2026-05-01 23:25:50'),
+	(231, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #88', '2026-04-11 23:25:46', '2026-05-01 23:25:50'),
+	(232, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #89', '2026-02-14 23:25:46', '2026-05-01 23:25:50'),
+	(233, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #89', '2026-02-14 23:25:46', '2026-05-01 23:25:50'),
+	(234, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #89', '2026-02-14 23:25:46', '2026-05-01 23:25:50'),
+	(235, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #90', '2025-07-08 23:25:46', '2026-05-01 23:25:50'),
+	(236, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #91', '2025-07-25 23:25:46', '2026-05-01 23:25:50'),
+	(237, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #91', '2025-07-25 23:25:46', '2026-05-01 23:25:50'),
+	(238, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #91', '2025-07-25 23:25:46', '2026-05-01 23:25:50'),
+	(239, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #91', '2025-07-25 23:25:46', '2026-05-01 23:25:50'),
+	(240, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #92', '2025-12-22 23:25:46', '2026-05-01 23:25:50'),
+	(241, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #92', '2025-12-22 23:25:46', '2026-05-01 23:25:50'),
+	(242, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #93', '2025-09-18 23:25:46', '2026-05-01 23:25:50'),
+	(243, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #93', '2025-09-18 23:25:46', '2026-05-01 23:25:50'),
+	(244, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #93', '2025-09-18 23:25:46', '2026-05-01 23:25:50'),
+	(245, 7, 1, 'sale', -1, NULL, NULL, 'Venta Orden #94', '2025-09-16 23:25:46', '2026-05-01 23:25:50'),
+	(246, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #94', '2025-09-16 23:25:46', '2026-05-01 23:25:50'),
+	(247, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #94', '2025-09-16 23:25:46', '2026-05-01 23:25:50'),
+	(248, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #94', '2025-09-16 23:25:46', '2026-05-01 23:25:50'),
+	(249, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #95', '2025-06-12 23:25:46', '2026-05-01 23:25:50'),
+	(250, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #95', '2025-06-12 23:25:46', '2026-05-01 23:25:50'),
+	(251, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #95', '2025-06-12 23:25:46', '2026-05-01 23:25:50'),
+	(252, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #95', '2025-06-12 23:25:46', '2026-05-01 23:25:50'),
+	(253, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #96', '2025-10-19 23:25:46', '2026-05-01 23:25:50'),
+	(254, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #96', '2025-10-19 23:25:46', '2026-05-01 23:25:50'),
+	(255, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #96', '2025-10-19 23:25:46', '2026-05-01 23:25:50'),
+	(256, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #96', '2025-10-19 23:25:46', '2026-05-01 23:25:50'),
+	(257, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #97', '2025-08-15 23:25:46', '2026-05-01 23:25:50'),
+	(258, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #97', '2025-08-15 23:25:46', '2026-05-01 23:25:50'),
+	(259, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #98', '2026-02-13 23:25:46', '2026-05-01 23:25:50'),
+	(260, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #98', '2026-02-13 23:25:46', '2026-05-01 23:25:50'),
+	(261, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #98', '2026-02-13 23:25:46', '2026-05-01 23:25:50'),
+	(262, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #99', '2026-03-30 23:25:46', '2026-05-01 23:25:50'),
+	(263, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #99', '2026-03-30 23:25:46', '2026-05-01 23:25:50'),
+	(264, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #99', '2026-03-30 23:25:46', '2026-05-01 23:25:50'),
+	(265, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #100', '2025-08-23 23:25:46', '2026-05-01 23:25:50'),
+	(266, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #100', '2025-08-23 23:25:46', '2026-05-01 23:25:50'),
+	(267, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #101', '2025-07-30 23:25:46', '2026-05-01 23:25:50'),
+	(268, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #101', '2025-07-30 23:25:46', '2026-05-01 23:25:50'),
+	(269, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #101', '2025-07-30 23:25:46', '2026-05-01 23:25:50'),
+	(270, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #102', '2025-07-09 23:25:46', '2026-05-01 23:25:50'),
+	(271, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #102', '2025-07-09 23:25:46', '2026-05-01 23:25:50'),
+	(272, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #102', '2025-07-09 23:25:46', '2026-05-01 23:25:50'),
+	(273, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #102', '2025-07-09 23:25:46', '2026-05-01 23:25:50'),
+	(274, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #103', '2025-12-10 23:25:46', '2026-05-01 23:25:50'),
+	(275, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #103', '2025-12-10 23:25:46', '2026-05-01 23:25:50'),
+	(276, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #104', '2026-02-17 23:25:46', '2026-05-01 23:25:50'),
+	(277, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #104', '2026-02-17 23:25:46', '2026-05-01 23:25:51'),
+	(278, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #104', '2026-02-17 23:25:46', '2026-05-01 23:25:51'),
+	(279, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #104', '2026-02-17 23:25:46', '2026-05-01 23:25:51'),
+	(280, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #105', '2026-04-25 23:25:46', '2026-05-01 23:25:51'),
+	(281, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #105', '2026-04-25 23:25:46', '2026-05-01 23:25:51'),
+	(282, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #105', '2026-04-25 23:25:46', '2026-05-01 23:25:51'),
+	(283, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #106', '2025-05-24 23:25:46', '2026-05-01 23:25:51'),
+	(284, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #106', '2025-05-24 23:25:46', '2026-05-01 23:25:51'),
+	(285, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #106', '2025-05-24 23:25:46', '2026-05-01 23:25:51'),
+	(286, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #106', '2025-05-24 23:25:46', '2026-05-01 23:25:51'),
+	(287, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #107', '2025-06-01 23:25:46', '2026-05-01 23:25:51'),
+	(288, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #107', '2025-06-01 23:25:46', '2026-05-01 23:25:51'),
+	(289, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #108', '2026-02-01 23:25:46', '2026-05-01 23:25:51'),
+	(290, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #109', '2026-03-02 23:25:46', '2026-05-01 23:25:51'),
+	(291, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #109', '2026-03-02 23:25:46', '2026-05-01 23:25:51'),
+	(292, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #109', '2026-03-02 23:25:46', '2026-05-01 23:25:51'),
+	(293, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #109', '2026-03-02 23:25:46', '2026-05-01 23:25:51'),
+	(294, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #110', '2026-04-15 23:25:46', '2026-05-01 23:25:51'),
+	(295, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #110', '2026-04-15 23:25:46', '2026-05-01 23:25:51'),
+	(296, 7, 1, 'sale', -1, NULL, NULL, 'Venta Orden #110', '2026-04-15 23:25:46', '2026-05-01 23:25:51'),
+	(297, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #110', '2026-04-15 23:25:46', '2026-05-01 23:25:51'),
+	(298, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #111', '2025-06-22 23:25:46', '2026-05-01 23:25:51'),
+	(299, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #111', '2025-06-22 23:25:46', '2026-05-01 23:25:51'),
+	(300, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #111', '2025-06-22 23:25:46', '2026-05-01 23:25:51'),
+	(301, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #112', '2025-07-03 23:25:46', '2026-05-01 23:25:51'),
+	(302, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #113', '2025-05-17 23:25:46', '2026-05-01 23:25:51'),
+	(303, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #113', '2025-05-17 23:25:46', '2026-05-01 23:25:51'),
+	(304, 10, 1, 'sale', -3, NULL, NULL, 'Venta Orden #113', '2025-05-17 23:25:46', '2026-05-01 23:25:51'),
+	(305, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #113', '2025-05-17 23:25:46', '2026-05-01 23:25:51'),
+	(306, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #114', '2026-02-28 23:25:46', '2026-05-01 23:25:51'),
+	(307, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #114', '2026-02-28 23:25:46', '2026-05-01 23:25:51'),
+	(308, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #114', '2026-02-28 23:25:46', '2026-05-01 23:25:51'),
+	(309, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #114', '2026-02-28 23:25:46', '2026-05-01 23:25:51'),
+	(310, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #115', '2025-06-21 23:25:46', '2026-05-01 23:25:51'),
+	(311, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #116', '2025-12-09 23:25:46', '2026-05-01 23:25:51'),
+	(312, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #116', '2025-12-09 23:25:46', '2026-05-01 23:25:51'),
+	(313, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #117', '2025-11-02 23:25:46', '2026-05-01 23:25:51'),
+	(314, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #117', '2025-11-02 23:25:46', '2026-05-01 23:25:51'),
+	(315, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #118', '2026-01-11 23:25:46', '2026-05-01 23:25:51'),
+	(316, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #119', '2026-04-18 23:25:46', '2026-05-01 23:25:51'),
+	(317, 7, 1, 'sale', -3, NULL, NULL, 'Venta Orden #119', '2026-04-18 23:25:46', '2026-05-01 23:25:51'),
+	(318, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #119', '2026-04-18 23:25:46', '2026-05-01 23:25:51'),
+	(319, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #119', '2026-04-18 23:25:46', '2026-05-01 23:25:51'),
+	(320, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #120', '2025-05-29 23:25:46', '2026-05-01 23:25:51'),
+	(321, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #120', '2025-05-29 23:25:46', '2026-05-01 23:25:51'),
+	(322, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #121', '2025-08-15 23:25:46', '2026-05-01 23:25:51'),
+	(323, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #122', '2025-06-04 23:25:46', '2026-05-01 23:25:51'),
+	(324, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #122', '2025-06-04 23:25:46', '2026-05-01 23:25:51'),
+	(325, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #122', '2025-06-04 23:25:46', '2026-05-01 23:25:51'),
+	(326, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #123', '2026-02-20 23:25:46', '2026-05-01 23:25:51'),
+	(327, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #123', '2026-02-20 23:25:46', '2026-05-01 23:25:51'),
+	(328, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #124', '2025-05-30 23:25:46', '2026-05-01 23:25:51'),
+	(329, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #125', '2026-03-18 23:25:46', '2026-05-01 23:25:51'),
+	(330, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #125', '2026-03-18 23:25:46', '2026-05-01 23:25:51'),
+	(331, 9, 1, 'sale', -2, NULL, NULL, 'Venta Orden #126', '2025-10-01 23:25:46', '2026-05-01 23:25:51'),
+	(332, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #126', '2025-10-01 23:25:46', '2026-05-01 23:25:51'),
+	(333, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #126', '2025-10-01 23:25:46', '2026-05-01 23:25:51'),
+	(334, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #127', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(335, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #127', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(336, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #127', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(337, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #128', '2025-11-14 23:25:46', '2026-05-01 23:25:51'),
+	(338, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #128', '2025-11-14 23:25:46', '2026-05-01 23:25:51'),
+	(339, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #129', '2025-09-11 23:25:46', '2026-05-01 23:25:51'),
+	(340, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #129', '2025-09-11 23:25:46', '2026-05-01 23:25:51'),
+	(341, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #129', '2025-09-11 23:25:46', '2026-05-01 23:25:51'),
+	(342, 5, 1, 'sale', -3, NULL, NULL, 'Venta Orden #129', '2025-09-11 23:25:46', '2026-05-01 23:25:51'),
+	(343, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #130', '2025-10-16 23:25:46', '2026-05-01 23:25:51'),
+	(344, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #130', '2025-10-16 23:25:46', '2026-05-01 23:25:51'),
+	(345, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #130', '2025-10-16 23:25:46', '2026-05-01 23:25:51'),
+	(346, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #130', '2025-10-16 23:25:46', '2026-05-01 23:25:51'),
+	(347, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #131', '2026-03-10 23:25:46', '2026-05-01 23:25:51'),
+	(348, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #131', '2026-03-10 23:25:46', '2026-05-01 23:25:51'),
+	(349, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #131', '2026-03-10 23:25:46', '2026-05-01 23:25:51'),
+	(350, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #132', '2025-09-17 23:25:46', '2026-05-01 23:25:51'),
+	(351, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #132', '2025-09-17 23:25:46', '2026-05-01 23:25:51'),
+	(352, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #133', '2025-11-14 23:25:46', '2026-05-01 23:25:51'),
+	(353, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #134', '2025-05-19 23:25:46', '2026-05-01 23:25:51'),
+	(354, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #134', '2025-05-19 23:25:46', '2026-05-01 23:25:51'),
+	(355, 6, 1, 'sale', -3, NULL, NULL, 'Venta Orden #134', '2025-05-19 23:25:46', '2026-05-01 23:25:51'),
+	(356, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #135', '2025-09-05 23:25:46', '2026-05-01 23:25:51'),
+	(357, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #135', '2025-09-05 23:25:46', '2026-05-01 23:25:51'),
+	(358, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #135', '2025-09-05 23:25:46', '2026-05-01 23:25:51'),
+	(359, 5, 1, 'sale', -2, NULL, NULL, 'Venta Orden #135', '2025-09-05 23:25:46', '2026-05-01 23:25:51'),
+	(360, 3, 1, 'sale', -1, NULL, NULL, 'Venta Orden #136', '2025-12-13 23:25:46', '2026-05-01 23:25:51'),
+	(361, 9, 1, 'sale', -3, NULL, NULL, 'Venta Orden #136', '2025-12-13 23:25:46', '2026-05-01 23:25:51'),
+	(362, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #137', '2025-08-29 23:25:46', '2026-05-01 23:25:51'),
+	(363, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #138', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(364, 7, 1, 'sale', -2, NULL, NULL, 'Venta Orden #138', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(365, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #138', '2025-05-08 23:25:46', '2026-05-01 23:25:51'),
+	(366, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #139', '2026-01-30 23:25:46', '2026-05-01 23:25:51'),
+	(367, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #140', '2025-11-05 23:25:46', '2026-05-01 23:25:51'),
+	(368, 1, 1, 'sale', -3, NULL, NULL, 'Venta Orden #140', '2025-11-05 23:25:46', '2026-05-01 23:25:51'),
+	(369, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #140', '2025-11-05 23:25:46', '2026-05-01 23:25:51'),
+	(370, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #141', '2025-05-31 23:25:46', '2026-05-01 23:25:51'),
+	(371, 2, 1, 'sale', -1, NULL, NULL, 'Venta Orden #141', '2025-05-31 23:25:46', '2026-05-01 23:25:51'),
+	(372, 1, 1, 'sale', -2, NULL, NULL, 'Venta Orden #141', '2025-05-31 23:25:46', '2026-05-01 23:25:51'),
+	(373, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #141', '2025-05-31 23:25:46', '2026-05-01 23:25:51'),
+	(374, 6, 1, 'sale', -1, NULL, NULL, 'Venta Orden #142', '2025-11-25 23:25:46', '2026-05-01 23:25:51'),
+	(375, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #142', '2025-11-25 23:25:46', '2026-05-01 23:25:51'),
+	(376, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #142', '2025-11-25 23:25:46', '2026-05-01 23:25:51'),
+	(377, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #142', '2025-11-25 23:25:46', '2026-05-01 23:25:51'),
+	(378, 8, 1, 'sale', -3, NULL, NULL, 'Venta Orden #143', '2025-12-16 23:25:46', '2026-05-01 23:25:51'),
+	(379, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #143', '2025-12-16 23:25:46', '2026-05-01 23:25:51'),
+	(380, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #143', '2025-12-16 23:25:46', '2026-05-01 23:25:51'),
+	(381, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #144', '2025-07-25 23:25:46', '2026-05-01 23:25:51'),
+	(382, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #144', '2025-07-25 23:25:46', '2026-05-01 23:25:51'),
+	(383, 3, 1, 'sale', -2, NULL, NULL, 'Venta Orden #144', '2025-07-25 23:25:46', '2026-05-01 23:25:51'),
+	(384, 4, 1, 'sale', -3, NULL, NULL, 'Venta Orden #144', '2025-07-25 23:25:46', '2026-05-01 23:25:51'),
+	(385, 10, 1, 'sale', -1, NULL, NULL, 'Venta Orden #145', '2026-01-01 23:25:46', '2026-05-01 23:25:51'),
+	(386, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #145', '2026-01-01 23:25:46', '2026-05-01 23:25:51'),
+	(387, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #145', '2026-01-01 23:25:46', '2026-05-01 23:25:51'),
+	(388, 8, 1, 'sale', -1, NULL, NULL, 'Venta Orden #145', '2026-01-01 23:25:46', '2026-05-01 23:25:51'),
+	(389, 8, 1, 'sale', -2, NULL, NULL, 'Venta Orden #146', '2025-09-10 23:25:46', '2026-05-01 23:25:51'),
+	(390, 9, 1, 'sale', -1, NULL, NULL, 'Venta Orden #146', '2025-09-10 23:25:46', '2026-05-01 23:25:51'),
+	(391, 2, 1, 'sale', -2, NULL, NULL, 'Venta Orden #146', '2025-09-10 23:25:46', '2026-05-01 23:25:51'),
+	(392, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #146', '2025-09-10 23:25:46', '2026-05-01 23:25:51'),
+	(393, 3, 1, 'sale', -3, NULL, NULL, 'Venta Orden #147', '2026-04-05 23:25:46', '2026-05-01 23:25:51'),
+	(394, 2, 1, 'sale', -3, NULL, NULL, 'Venta Orden #148', '2025-06-22 23:25:46', '2026-05-01 23:25:51'),
+	(395, 1, 1, 'sale', -1, NULL, NULL, 'Venta Orden #148', '2025-06-22 23:25:46', '2026-05-01 23:25:51'),
+	(396, 4, 1, 'sale', -2, NULL, NULL, 'Venta Orden #149', '2025-07-17 23:25:46', '2026-05-01 23:25:51'),
+	(397, 5, 1, 'sale', -1, NULL, NULL, 'Venta Orden #149', '2025-07-17 23:25:46', '2026-05-01 23:25:51'),
+	(398, 10, 1, 'sale', -2, NULL, NULL, 'Venta Orden #149', '2025-07-17 23:25:46', '2026-05-01 23:25:51'),
+	(399, 4, 1, 'sale', -1, NULL, NULL, 'Venta Orden #149', '2025-07-17 23:25:46', '2026-05-01 23:25:51'),
+	(400, 6, 1, 'sale', -2, NULL, NULL, 'Venta Orden #150', '2025-08-09 23:25:46', '2026-05-01 23:25:51'),
+	(401, 2, 1, 'sale', -2, 25, 23, 'Venta POS #154', '2026-05-03 06:05:54', '2026-05-03 06:05:54'),
+	(402, 7, 1, 'sale', -1, 93, 92, 'Venta POS #154', '2026-05-03 06:05:54', '2026-05-03 06:05:54'),
+	(403, 1, 1, 'sale', -1, 57, 56, 'Venta POS #154', '2026-05-03 06:05:54', '2026-05-03 06:05:54'),
+	(404, 7, 1, 'sale', -1, 92, 91, 'Venta POS #156', '2026-05-03 06:27:06', '2026-05-03 06:27:06'),
+	(405, 8, 1, 'sale', -1, 67, 66, 'Venta POS #156', '2026-05-03 06:27:06', '2026-05-03 06:27:06');
+
+-- Volcando estructura para tabla restaurante_db.jobs
+CREATE TABLE IF NOT EXISTS `jobs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `queue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint unsigned NOT NULL,
+  `reserved_at` int unsigned DEFAULT NULL,
+  `available_at` int unsigned NOT NULL,
+  `created_at` int unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `jobs_queue_index` (`queue`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.jobs: ~0 rows (aproximadamente)
+DELETE FROM `jobs`;
+
+-- Volcando estructura para tabla restaurante_db.job_batches
+CREATE TABLE IF NOT EXISTS `job_batches` (
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `total_jobs` int NOT NULL,
+  `pending_jobs` int NOT NULL,
+  `failed_jobs` int NOT NULL,
+  `failed_job_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `cancelled_at` int DEFAULT NULL,
+  `created_at` int NOT NULL,
+  `finished_at` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.job_batches: ~0 rows (aproximadamente)
+DELETE FROM `job_batches`;
+
+-- Volcando estructura para tabla restaurante_db.migrations
+CREATE TABLE IF NOT EXISTS `migrations` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch` int NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.migrations: ~26 rows (aproximadamente)
+DELETE FROM `migrations`;
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
+	(1, '0001_01_01_000000_create_users_table', 1),
+	(2, '0001_01_01_000001_create_cache_table', 1),
+	(3, '0001_01_01_000002_create_jobs_table', 1),
+	(4, '2025_12_25_151213_create_categories_table', 1),
+	(5, '2025_12_25_151226_create_products_table', 1),
+	(6, '2025_12_25_151405_create_areas_table', 1),
+	(7, '2025_12_25_151405_create_tables_table', 1),
+	(8, '2025_12_25_152440_create_sessions_table', 1),
+	(9, '2025_12_25_154209_create_orders_table', 1),
+	(10, '2025_12_25_154210_create_order_details_table', 1),
+	(11, '2025_12_25_182109_create_settings_table', 2),
+	(12, '2025_12_25_190357_add_payments_to_orders_table', 3),
+	(13, '2025_12_25_194039_add_note_to_order_details_table', 4),
+	(14, '2025_12_27_201525_create_expenses_table', 5),
+	(15, '2025_12_27_202113_add_client_data_to_orders', 6),
+	(16, '2025_12_27_203616_add_discount_and_tip_to_orders', 7),
+	(17, '2025_12_28_024400_add_role_to_users', 8),
+	(18, '2025_12_28_032924_create_inventory_logs_table', 8),
+	(19, '2025_12_28_041453_create_clients_table', 9),
+	(20, '2025_12_28_043046_add_client_id_to_orders_table', 10),
+	(21, '2025_12_29_140318_add_position_to_tables_table', 11),
+	(22, '2025_12_29_142451_add_coords_to_tables', 12),
+	(23, '2025_12_29_161924_create_reservations_table', 13),
+	(24, '2025_12_29_180402_create_product_ingredients_table', 14),
+	(25, '2025_12_29_182322_add_is_saleable_to_products_table', 15),
+	(26, '2026_01_10_031729_add_barcode_to_products_table', 16),
+	(27, '2026_05_01_180952_create_cash_registers_table', 17),
+	(28, '2026_05_01_180953_add_cash_register_id_to_orders_and_expenses', 17),
+	(29, '2026_05_01_183934_add_menu_fields_to_products_table', 18),
+	(30, '2026_05_03_000001_create_delivery_drivers_table', 19),
+	(31, '2026_05_03_000002_create_deliveries_table', 19),
+	(32, '2026_05_03_000003_make_table_id_nullable_on_orders_table', 20),
+	(33, '2026_05_17_120001_add_sunat_fields_to_orders_table', 21),
+	(34, '2026_05_17_120002_create_document_series_table', 21),
+	(35, '2026_05_17_120003_create_credit_notes_table', 21),
+	(36, '2026_05_17_120004_create_daily_summaries_table', 21);
+
+-- Volcando estructura para tabla restaurante_db.orders
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `table_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `status` enum('pending','completed','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `document_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Ticket',
+  `serie` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `correlativo` int unsigned DEFAULT NULL,
+  `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Público General',
+  `client_document` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `total` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `igv` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_gravada` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_exonerada` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_inafecta` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_gratuita` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `sunat_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING',
+  `sunat_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sunat_description` text COLLATE utf8mb4_unicode_ci,
+  `xml_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cdr_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hash` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `discount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `tip` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `payment_method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `received_amount` decimal(10,2) DEFAULT NULL,
+  `change_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `client_id` bigint unsigned DEFAULT NULL,
+  `cash_register_id` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `orders_doc_serie_corr_unique` (`document_type`,`serie`,`correlativo`),
+  KEY `orders_table_id_foreign` (`table_id`),
+  KEY `orders_user_id_foreign` (`user_id`),
+  KEY `orders_client_id_foreign` (`client_id`),
+  KEY `orders_cash_register_id_foreign` (`cash_register_id`),
+  CONSTRAINT `orders_cash_register_id_foreign` FOREIGN KEY (`cash_register_id`) REFERENCES `cash_registers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `orders_client_id_foreign` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `orders_table_id_foreign` FOREIGN KEY (`table_id`) REFERENCES `tables` (`id`),
+  CONSTRAINT `orders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=168 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.orders: ~159 rows (aproximadamente)
+DELETE FROM `orders`;
+INSERT INTO `orders` (`id`, `table_id`, `user_id`, `status`, `document_type`, `serie`, `correlativo`, `client_name`, `client_document`, `total`, `subtotal`, `igv`, `total_gravada`, `total_exonerada`, `total_inafecta`, `total_gratuita`, `sunat_status`, `sunat_code`, `sunat_description`, `xml_path`, `cdr_path`, `pdf_path`, `hash`, `sent_at`, `discount`, `tip`, `payment_method`, `received_amount`, `change_amount`, `notes`, `created_at`, `updated_at`, `client_id`, `cash_register_id`) VALUES
+	(1, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 52.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 52.00, 0.00, NULL, '2026-01-17 23:25:46', '2026-05-01 23:25:48', 5, NULL),
+	(2, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 144.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 144.00, 0.00, NULL, '2025-05-14 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(3, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 32.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 32.00, 0.00, NULL, '2025-08-30 23:25:46', '2026-05-01 23:25:48', 9, NULL),
+	(4, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 76.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 76.00, 0.00, NULL, '2026-04-20 23:25:46', '2026-05-01 23:25:48', 2, NULL),
+	(5, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 121.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 121.00, 0.00, NULL, '2026-03-01 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(6, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 147.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 147.00, 0.00, NULL, '2026-01-12 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(7, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 185.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 185.00, 0.00, NULL, '2026-02-21 23:25:46', '2026-05-01 23:25:48', 10, NULL),
+	(8, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 102.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 102.00, 0.00, NULL, '2026-04-18 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(9, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 32.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 32.00, 0.00, NULL, '2025-06-25 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(10, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 293.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 293.00, 0.00, NULL, '2026-02-06 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(11, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 157.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 157.00, 0.00, NULL, '2026-04-22 23:25:46', '2026-05-01 23:25:48', 5, NULL),
+	(12, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 6.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 6.00, 0.00, NULL, '2025-12-30 23:25:46', '2026-05-01 23:25:48', 7, NULL),
+	(13, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 163.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 163.00, 0.00, NULL, '2025-07-12 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(14, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 231.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 231.00, 0.00, NULL, '2026-04-29 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(15, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 107.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 107.00, 0.00, NULL, '2025-09-01 23:25:46', '2026-05-01 23:25:48', 7, NULL),
+	(16, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 196.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 196.00, 0.00, NULL, '2026-01-11 23:25:46', '2026-05-01 23:25:48', NULL, NULL),
+	(17, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 238.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 238.00, 0.00, NULL, '2026-04-10 23:25:46', '2026-05-01 23:25:48', 10, NULL),
+	(18, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 126.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 126.00, 0.00, NULL, '2025-12-10 23:25:46', '2026-05-01 23:25:49', 10, NULL),
+	(19, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 128.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 128.00, 0.00, NULL, '2025-08-06 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(20, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 35.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 35.00, 0.00, NULL, '2025-07-19 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(21, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 81.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 81.00, 0.00, NULL, '2025-07-23 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(22, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 149.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 149.00, 0.00, NULL, '2026-04-23 23:25:46', '2026-05-01 23:25:49', 1, NULL),
+	(23, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 47.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2025-10-25 23:25:46', '2026-05-01 23:25:49', 6, NULL),
+	(24, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 72.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 72.00, 0.00, NULL, '2025-07-02 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(25, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 190.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 190.00, 0.00, NULL, '2025-10-15 23:25:46', '2026-05-01 23:25:49', 2, NULL),
+	(26, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 35.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 35.00, 0.00, NULL, '2026-03-13 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(27, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 150.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 150.00, 0.00, NULL, '2025-05-29 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(28, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 58.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 58.00, 0.00, NULL, '2025-12-21 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(29, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 74.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 74.00, 0.00, NULL, '2025-07-09 23:25:46', '2026-05-01 23:25:49', 3, NULL),
+	(30, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 51.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 51.00, 0.00, NULL, '2025-10-21 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(31, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 12.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 12.00, 0.00, NULL, '2025-08-02 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(32, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 213.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 213.00, 0.00, NULL, '2025-05-29 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(33, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 68.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 68.00, 0.00, NULL, '2025-11-20 23:25:46', '2026-05-01 23:25:49', 6, NULL),
+	(34, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 140.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 140.00, 0.00, NULL, '2025-06-03 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(35, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 44.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 44.00, 0.00, NULL, '2025-12-30 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(36, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 79.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 79.00, 0.00, NULL, '2025-06-06 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(37, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 177.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 177.00, 0.00, NULL, '2026-03-31 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(38, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 45.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 45.00, 0.00, NULL, '2025-10-07 23:25:46', '2026-05-01 23:25:49', 3, NULL),
+	(39, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 65.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 65.00, 0.00, NULL, '2025-06-27 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(40, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 55.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 55.00, 0.00, NULL, '2026-02-24 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(41, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 120.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 120.00, 0.00, NULL, '2025-06-09 23:25:46', '2026-05-01 23:25:49', 2, NULL),
+	(42, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 225.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 225.00, 0.00, NULL, '2025-08-17 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(43, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 156.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 156.00, 0.00, NULL, '2026-03-16 23:25:46', '2026-05-01 23:25:49', 8, NULL),
+	(44, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 182.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 182.00, 0.00, NULL, '2025-09-15 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(45, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 234.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 234.00, 0.00, NULL, '2026-03-03 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(46, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 226.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 226.00, 0.00, NULL, '2026-03-18 23:25:46', '2026-05-01 23:25:49', 10, NULL),
+	(47, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 123.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 123.00, 0.00, NULL, '2026-04-23 23:25:46', '2026-05-01 23:25:49', 8, NULL),
+	(48, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 30.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 30.00, 0.00, NULL, '2025-05-08 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(49, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 145.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 145.00, 0.00, NULL, '2025-10-06 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(50, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 80.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 80.00, 0.00, NULL, '2025-09-23 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(51, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 190.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 190.00, 0.00, NULL, '2025-12-26 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(52, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 90.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 90.00, 0.00, NULL, '2025-10-05 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(53, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 112.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 112.00, 0.00, NULL, '2025-05-25 23:25:46', '2026-05-01 23:25:49', 5, NULL),
+	(54, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 204.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 204.00, 0.00, NULL, '2026-02-05 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(55, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 142.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 142.00, 0.00, NULL, '2025-07-18 23:25:46', '2026-05-01 23:25:49', 10, NULL),
+	(56, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 44.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 44.00, 0.00, NULL, '2025-11-30 23:25:46', '2026-05-01 23:25:49', 1, NULL),
+	(57, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 121.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 121.00, 0.00, NULL, '2026-03-27 23:25:46', '2026-05-01 23:25:49', 3, NULL),
+	(58, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 30.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 30.00, 0.00, NULL, '2025-10-20 23:25:46', '2026-05-01 23:25:49', NULL, NULL),
+	(59, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 192.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 192.00, 0.00, NULL, '2025-09-29 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(60, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 227.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 227.00, 0.00, NULL, '2026-02-22 23:25:46', '2026-05-01 23:25:50', 8, NULL),
+	(61, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 171.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 171.00, 0.00, NULL, '2025-05-17 23:25:46', '2026-05-01 23:25:50', 7, NULL),
+	(62, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 151.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 151.00, 0.00, NULL, '2025-11-21 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(63, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 151.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 151.00, 0.00, NULL, '2026-01-08 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(64, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 140.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 140.00, 0.00, NULL, '2026-01-16 23:25:46', '2026-05-01 23:25:50', 1, NULL),
+	(65, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 146.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 146.00, 0.00, NULL, '2025-05-07 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(66, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 136.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 136.00, 0.00, NULL, '2025-06-17 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(67, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 65.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 65.00, 0.00, NULL, '2025-09-22 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(68, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 35.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 35.00, 0.00, NULL, '2025-10-17 23:25:46', '2026-05-01 23:25:50', 4, NULL),
+	(69, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 38.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 38.00, 0.00, NULL, '2025-11-05 23:25:46', '2026-05-01 23:25:50', 6, NULL),
+	(70, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 52.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 52.00, 0.00, NULL, '2025-08-06 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(71, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 66.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 66.00, 0.00, NULL, '2025-06-12 23:25:46', '2026-05-01 23:25:50', 5, NULL),
+	(72, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 66.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 66.00, 0.00, NULL, '2025-05-12 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(73, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 96.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 96.00, 0.00, NULL, '2025-08-16 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(74, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 78.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 78.00, 0.00, NULL, '2025-11-09 23:25:46', '2026-05-01 23:25:50', 4, NULL),
+	(75, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 203.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 203.00, 0.00, NULL, '2025-09-25 23:25:46', '2026-05-01 23:25:50', 8, NULL),
+	(76, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 123.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 123.00, 0.00, NULL, '2025-10-13 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(77, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 104.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 104.00, 0.00, NULL, '2026-04-09 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(78, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 138.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 138.00, 0.00, NULL, '2025-05-10 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(79, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 64.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 64.00, 0.00, NULL, '2025-09-08 23:25:46', '2026-05-01 23:25:50', 1, NULL),
+	(80, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 54.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 54.00, 0.00, NULL, '2025-09-14 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(81, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 66.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 66.00, 0.00, NULL, '2026-03-28 23:25:46', '2026-05-01 23:25:50', 1, NULL),
+	(82, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 70.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 70.00, 0.00, NULL, '2025-07-11 23:25:46', '2026-05-01 23:25:50', 3, NULL),
+	(83, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 105.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 105.00, 0.00, NULL, '2026-04-28 23:25:46', '2026-05-01 23:25:50', 10, NULL),
+	(84, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 72.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 72.00, 0.00, NULL, '2025-12-30 23:25:46', '2026-05-01 23:25:50', 7, NULL),
+	(85, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 26.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 26.00, 0.00, NULL, '2025-12-24 23:25:46', '2026-05-01 23:25:50', 1, NULL),
+	(86, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 120.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 120.00, 0.00, NULL, '2026-01-21 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(87, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 91.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 91.00, 0.00, NULL, '2025-11-28 23:25:46', '2026-05-01 23:25:50', 3, NULL),
+	(88, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 222.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 222.00, 0.00, NULL, '2026-04-11 23:25:46', '2026-05-01 23:25:50', 5, NULL),
+	(89, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 174.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 174.00, 0.00, NULL, '2026-02-14 23:25:46', '2026-05-01 23:25:50', 10, NULL),
+	(90, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 25.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 25.00, 0.00, NULL, '2025-07-08 23:25:46', '2026-05-01 23:25:50', 4, NULL),
+	(91, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 159.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 159.00, 0.00, NULL, '2025-07-25 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(92, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 21.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 21.00, 0.00, NULL, '2025-12-22 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(93, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 123.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 123.00, 0.00, NULL, '2025-09-18 23:25:46', '2026-05-01 23:25:50', 1, NULL),
+	(94, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 192.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 192.00, 0.00, NULL, '2025-09-16 23:25:46', '2026-05-01 23:25:50', 2, NULL),
+	(95, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 261.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 261.00, 0.00, NULL, '2025-06-12 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(96, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 127.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 127.00, 0.00, NULL, '2025-10-19 23:25:46', '2026-05-01 23:25:50', 10, NULL),
+	(97, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 56.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 56.00, 0.00, NULL, '2025-08-15 23:25:46', '2026-05-01 23:25:50', 3, NULL),
+	(98, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 44.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 44.00, 0.00, NULL, '2026-02-13 23:25:46', '2026-05-01 23:25:50', 10, NULL),
+	(99, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 117.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 117.00, 0.00, NULL, '2026-03-30 23:25:46', '2026-05-01 23:25:50', 7, NULL),
+	(100, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 60.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 60.00, 0.00, NULL, '2025-08-23 23:25:46', '2026-05-01 23:25:50', 9, NULL),
+	(101, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 52.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 52.00, 0.00, NULL, '2025-07-30 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(102, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 62.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 62.00, 0.00, NULL, '2025-07-09 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(103, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 52.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 52.00, 0.00, NULL, '2025-12-10 23:25:46', '2026-05-01 23:25:50', NULL, NULL),
+	(104, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 184.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 184.00, 0.00, NULL, '2026-02-17 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(105, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 166.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 166.00, 0.00, NULL, '2026-04-25 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(106, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 189.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 189.00, 0.00, NULL, '2025-05-24 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(107, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 136.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 136.00, 0.00, NULL, '2025-06-01 23:25:46', '2026-05-01 23:25:51', 7, NULL),
+	(108, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 12.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 12.00, 0.00, NULL, '2026-02-01 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(109, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 144.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 144.00, 0.00, NULL, '2026-03-02 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(110, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 144.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 144.00, 0.00, NULL, '2026-04-15 23:25:46', '2026-05-01 23:25:51', 6, NULL),
+	(111, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 211.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 211.00, 0.00, NULL, '2025-06-22 23:25:46', '2026-05-01 23:25:51', 10, NULL),
+	(112, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 45.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 45.00, 0.00, NULL, '2025-07-03 23:25:46', '2026-05-01 23:25:51', 9, NULL),
+	(113, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 274.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 274.00, 0.00, NULL, '2025-05-17 23:25:46', '2026-05-01 23:25:51', 4, NULL),
+	(114, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 235.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 235.00, 0.00, NULL, '2026-02-28 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(115, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 38.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 38.00, 0.00, NULL, '2025-06-21 23:25:46', '2026-05-01 23:25:51', 8, NULL),
+	(116, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 98.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 98.00, 0.00, NULL, '2025-12-09 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(117, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 56.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 56.00, 0.00, NULL, '2025-11-02 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(118, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 66.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 66.00, 0.00, NULL, '2026-01-11 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(119, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 147.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 147.00, 0.00, NULL, '2026-04-18 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(120, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 140.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 140.00, 0.00, NULL, '2025-05-29 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(121, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 12.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 12.00, 0.00, NULL, '2025-08-15 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(122, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 119.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 119.00, 0.00, NULL, '2025-06-04 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(123, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 126.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 126.00, 0.00, NULL, '2026-02-20 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(124, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 90.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 90.00, 0.00, NULL, '2025-05-30 23:25:46', '2026-05-01 23:25:51', 6, NULL),
+	(125, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 40.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 40.00, 0.00, NULL, '2026-03-18 23:25:46', '2026-05-01 23:25:51', 8, NULL),
+	(126, 9, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 162.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 162.00, 0.00, NULL, '2025-10-01 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(127, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 132.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 132.00, 0.00, NULL, '2025-05-08 23:25:46', '2026-05-01 23:25:51', 2, NULL),
+	(128, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 37.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 37.00, 0.00, NULL, '2025-11-14 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(129, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 185.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 185.00, 0.00, NULL, '2025-09-11 23:25:46', '2026-05-01 23:25:51', 1, NULL),
+	(130, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 71.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 71.00, 0.00, NULL, '2025-10-16 23:25:46', '2026-05-01 23:25:51', 6, NULL),
+	(131, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 41.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 41.00, 0.00, NULL, '2026-03-10 23:25:46', '2026-05-01 23:25:51', 3, NULL),
+	(132, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 28.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 28.00, 0.00, NULL, '2025-09-17 23:25:46', '2026-05-01 23:25:51', 6, NULL),
+	(133, 8, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 16.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 16.00, 0.00, NULL, '2025-11-14 23:25:46', '2026-05-01 23:25:51', 6, NULL),
+	(134, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 171.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 171.00, 0.00, NULL, '2025-05-19 23:25:46', '2026-05-01 23:25:51', 5, NULL),
+	(135, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 62.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 62.00, 0.00, NULL, '2025-09-05 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(136, 5, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 83.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 83.00, 0.00, NULL, '2025-12-13 23:25:46', '2026-05-01 23:25:51', 7, NULL),
+	(137, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 30.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 30.00, 0.00, NULL, '2025-08-29 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(138, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 60.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 60.00, 0.00, NULL, '2025-05-08 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(139, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 70.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 70.00, 0.00, NULL, '2026-01-30 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(140, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 89.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 89.00, 0.00, NULL, '2025-11-05 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(141, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 173.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 173.00, 0.00, NULL, '2025-05-31 23:25:46', '2026-05-01 23:25:51', 4, NULL),
+	(142, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 137.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 137.00, 0.00, NULL, '2025-11-25 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(143, 10, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 132.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 132.00, 0.00, NULL, '2025-12-16 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(144, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 164.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 164.00, 0.00, NULL, '2025-07-25 23:25:46', '2026-05-01 23:25:51', 1, NULL),
+	(145, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 123.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 123.00, 0.00, NULL, '2026-01-01 23:25:46', '2026-05-01 23:25:51', 8, NULL),
+	(146, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 179.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 179.00, 0.00, NULL, '2025-09-10 23:25:46', '2026-05-01 23:25:51', 4, NULL),
+	(147, 1, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 24.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 24.00, 0.00, NULL, '2026-04-05 23:25:46', '2026-05-01 23:25:51', 2, NULL),
+	(148, 2, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 117.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 117.00, 0.00, NULL, '2025-06-22 23:25:46', '2026-05-01 23:25:51', 4, NULL),
+	(149, 3, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 109.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 109.00, 0.00, NULL, '2025-07-17 23:25:46', '2026-05-01 23:25:51', 10, NULL),
+	(150, 7, 1, 'completed', 'Ticket', NULL, NULL, 'Público General', NULL, 44.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'card', 44.00, 0.00, NULL, '2025-08-09 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(151, 1, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 50.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-01 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(152, 2, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 12.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-01 23:25:46', '2026-05-01 23:25:51', NULL, NULL),
+	(153, 3, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 59.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-01 23:25:46', '2026-05-04 02:32:11', NULL, NULL),
+	(154, 4, 1, 'completed', 'Ticket', NULL, NULL, 'Cliente Frecuente 1', '70000001', 100.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 200.00, 100.00, NULL, '2026-05-03 05:53:43', '2026-05-03 06:05:54', 1, 1),
+	(155, 5, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 30.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-03 06:06:10', '2026-05-03 06:06:10', NULL, NULL),
+	(156, 6, 1, 'completed', 'Ticket', NULL, NULL, 'Cliente Frecuente 1', '70000001', 48.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 48.00, 0.00, NULL, '2026-05-03 06:07:34', '2026-05-03 06:27:06', 1, 1),
+	(157, 6, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 6.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-03 06:27:15', '2026-05-03 06:27:15', NULL, NULL),
+	(158, NULL, 1, 'pending', 'Ticket', NULL, NULL, 'Carlos Delivery', NULL, 24.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-03 07:05:38', '2026-05-03 07:05:38', NULL, 1),
+	(159, 4, 1, 'pending', 'Ticket', NULL, NULL, 'Público General', NULL, 60.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', NULL, 0.00, NULL, '2026-05-03 13:50:21', '2026-05-03 13:50:24', NULL, NULL),
+	(160, 1, 1, 'completed', 'Boleta', 'B001', 1, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-17 23:34:27', '2026-05-17 23:34:27', NULL, NULL),
+	(161, 1, 1, 'completed', 'Boleta', 'B001', 2, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'ERROR', '500', 'No se encontró certificado digital. Suba el .pfx en Configuración.', NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 00:06:59', '2026-05-18 00:07:00', NULL, NULL),
+	(162, 1, 1, 'completed', 'Boleta', 'B001', 3, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'ERROR', '500', 'No se encontró certificado digital. Suba el .pfx en Configuración.', NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 05:40:17', '2026-05-18 05:40:17', NULL, NULL),
+	(163, 1, 1, 'completed', 'Boleta', 'B001', 4, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 05:43:51', '2026-05-18 05:43:51', NULL, NULL),
+	(164, 1, 1, 'completed', 'Boleta', 'B001', 5, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'PENDING', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 05:49:23', '2026-05-18 05:49:23', NULL, NULL),
+	(165, 1, 1, 'completed', 'Boleta', 'B001', 6, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'REJECTED', '0306', 'No se puede leer (parsear) el archivo XML - Detalle: http://xxx.xxx.xxx/ol-ti-itcpfegem-beta/billService: cvc-complex-type 3: element {urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}Note of type {urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2}NoteType had undefined attribute languageLocaleID', 'sunat/xml/20000000001-03-B001-6.xml', NULL, NULL, 'tLbHgansQBmX0YtWMxPtoOI1vM0=', '2026-05-18 05:54:38', 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 05:54:35', '2026-05-18 05:54:38', NULL, NULL),
+	(166, 1, 1, 'completed', 'Boleta', 'B001', 7, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'REJECTED', '2074', 'UBLVersionID - La versión del UBL no es correcta - Detalle: xxx.xxx.xxx value=\'ticket: 1779066150798 error: INFO: 2074 (nodo: "Invoice/cbc:UBLVersionID" valor: "2.1")\'', 'sunat/xml/20000000001-03-B001-7.xml', NULL, NULL, 'FCfxAeG2ji6kqkX3HB+UUiSIa9Y=', '2026-05-18 06:02:27', 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 06:02:26', '2026-05-18 06:02:27', NULL, NULL),
+	(167, 1, 1, 'completed', 'Boleta', 'B001', 8, 'Cliente Prueba', '12345678', 47.00, 39.83, 7.17, 39.83, 0.00, 0.00, 0.00, 'REJECTED', '2074', 'UBLVersionID - La versión del UBL no es correcta - Detalle: xxx.xxx.xxx value=\'ticket: 1779070437124 error: INFO: 2074 (nodo: "Invoice/cbc:UBLVersionID" valor: "2.1")\'', 'sunat/xml/20000000001-03-B001-8.xml', NULL, NULL, 'jCGnPKDuiYe1vWC1XLZ0//uK3nk=', '2026-05-18 07:13:53', 0.00, 0.00, 'cash', 47.00, 0.00, NULL, '2026-05-18 07:13:53', '2026-05-18 07:13:53', NULL, NULL);
+
+-- Volcando estructura para tabla restaurante_db.order_details
+CREATE TABLE IF NOT EXISTS `order_details` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `order_id` bigint unsigned NOT NULL,
+  `product_id` bigint unsigned NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `price` decimal(10,2) NOT NULL,
+  `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('pending','cooking','served') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_details_order_id_foreign` (`order_id`),
+  KEY `order_details_product_id_foreign` (`product_id`),
+  CONSTRAINT `order_details_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `order_details_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=432 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.order_details: ~403 rows (aproximadamente)
+DELETE FROM `order_details`;
+INSERT INTO `order_details` (`id`, `order_id`, `product_id`, `quantity`, `price`, `note`, `status`, `created_at`, `updated_at`) VALUES
+	(1, 1, 5, 2, 15.00, NULL, 'served', '2026-01-17 23:25:46', '2026-01-17 23:25:46'),
+	(2, 1, 6, 1, 22.00, NULL, 'served', '2026-01-17 23:25:46', '2026-01-17 23:25:46'),
+	(3, 2, 10, 1, 38.00, NULL, 'served', '2025-05-14 23:25:46', '2025-05-14 23:25:46'),
+	(4, 2, 4, 3, 6.00, NULL, 'served', '2025-05-14 23:25:46', '2025-05-14 23:25:46'),
+	(5, 2, 10, 1, 38.00, NULL, 'served', '2025-05-14 23:25:46', '2025-05-14 23:25:46'),
+	(6, 2, 9, 2, 25.00, NULL, 'served', '2025-05-14 23:25:46', '2025-05-14 23:25:46'),
+	(7, 3, 3, 3, 8.00, NULL, 'served', '2025-08-30 23:25:46', '2025-08-30 23:25:46'),
+	(8, 3, 3, 1, 8.00, NULL, 'served', '2025-08-30 23:25:46', '2025-08-30 23:25:46'),
+	(9, 4, 10, 2, 38.00, NULL, 'served', '2026-04-20 23:25:46', '2026-04-20 23:25:46'),
+	(10, 5, 3, 2, 8.00, NULL, 'served', '2026-03-01 23:25:46', '2026-03-01 23:25:46'),
+	(11, 5, 2, 3, 35.00, NULL, 'served', '2026-03-01 23:25:46', '2026-03-01 23:25:46'),
+	(12, 6, 6, 1, 22.00, NULL, 'served', '2026-01-12 23:25:46', '2026-01-12 23:25:46'),
+	(13, 6, 2, 1, 35.00, NULL, 'served', '2026-01-12 23:25:46', '2026-01-12 23:25:46'),
+	(14, 6, 8, 3, 30.00, NULL, 'served', '2026-01-12 23:25:46', '2026-01-12 23:25:46'),
+	(15, 7, 8, 2, 30.00, NULL, 'served', '2026-02-21 23:25:46', '2026-02-21 23:25:46'),
+	(16, 7, 9, 2, 25.00, NULL, 'served', '2026-02-21 23:25:46', '2026-02-21 23:25:46'),
+	(17, 7, 9, 3, 25.00, NULL, 'served', '2026-02-21 23:25:46', '2026-02-21 23:25:46'),
+	(18, 8, 6, 3, 22.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(19, 8, 1, 3, 12.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(20, 9, 3, 2, 8.00, NULL, 'served', '2025-06-25 23:25:46', '2025-06-25 23:25:46'),
+	(21, 9, 3, 2, 8.00, NULL, 'served', '2025-06-25 23:25:46', '2025-06-25 23:25:46'),
+	(22, 10, 9, 3, 25.00, NULL, 'served', '2026-02-06 23:25:46', '2026-02-06 23:25:46'),
+	(23, 10, 2, 3, 35.00, NULL, 'served', '2026-02-06 23:25:46', '2026-02-06 23:25:46'),
+	(24, 10, 9, 3, 25.00, NULL, 'served', '2026-02-06 23:25:46', '2026-02-06 23:25:46'),
+	(25, 10, 10, 1, 38.00, NULL, 'served', '2026-02-06 23:25:46', '2026-02-06 23:25:46'),
+	(26, 11, 4, 1, 6.00, NULL, 'served', '2026-04-22 23:25:46', '2026-04-22 23:25:46'),
+	(27, 11, 10, 1, 38.00, NULL, 'served', '2026-04-22 23:25:46', '2026-04-22 23:25:46'),
+	(28, 11, 10, 1, 38.00, NULL, 'served', '2026-04-22 23:25:46', '2026-04-22 23:25:46'),
+	(29, 11, 9, 3, 25.00, NULL, 'served', '2026-04-22 23:25:46', '2026-04-22 23:25:46'),
+	(30, 12, 4, 1, 6.00, NULL, 'served', '2025-12-30 23:25:46', '2025-12-30 23:25:46'),
+	(31, 13, 1, 3, 12.00, NULL, 'served', '2025-07-12 23:25:46', '2025-07-12 23:25:46'),
+	(32, 13, 3, 2, 8.00, NULL, 'served', '2025-07-12 23:25:46', '2025-07-12 23:25:46'),
+	(33, 13, 5, 3, 15.00, NULL, 'served', '2025-07-12 23:25:46', '2025-07-12 23:25:46'),
+	(34, 13, 6, 3, 22.00, NULL, 'served', '2025-07-12 23:25:46', '2025-07-12 23:25:46'),
+	(35, 14, 2, 2, 35.00, NULL, 'served', '2026-04-29 23:25:46', '2026-04-29 23:25:46'),
+	(36, 14, 6, 2, 22.00, NULL, 'served', '2026-04-29 23:25:46', '2026-04-29 23:25:46'),
+	(37, 14, 2, 3, 35.00, NULL, 'served', '2026-04-29 23:25:46', '2026-04-29 23:25:46'),
+	(38, 14, 4, 2, 6.00, NULL, 'served', '2026-04-29 23:25:46', '2026-04-29 23:25:46'),
+	(39, 15, 3, 3, 8.00, NULL, 'served', '2025-09-01 23:25:46', '2025-09-01 23:25:46'),
+	(40, 15, 10, 1, 38.00, NULL, 'served', '2025-09-01 23:25:46', '2025-09-01 23:25:46'),
+	(41, 15, 5, 3, 15.00, NULL, 'served', '2025-09-01 23:25:46', '2025-09-01 23:25:46'),
+	(42, 16, 10, 1, 38.00, NULL, 'served', '2026-01-11 23:25:46', '2026-01-11 23:25:46'),
+	(43, 16, 6, 3, 22.00, NULL, 'served', '2026-01-11 23:25:46', '2026-01-11 23:25:46'),
+	(44, 16, 2, 2, 35.00, NULL, 'served', '2026-01-11 23:25:46', '2026-01-11 23:25:46'),
+	(45, 16, 6, 1, 22.00, NULL, 'served', '2026-01-11 23:25:46', '2026-01-11 23:25:46'),
+	(46, 17, 10, 2, 38.00, NULL, 'served', '2026-04-10 23:25:46', '2026-04-10 23:25:46'),
+	(47, 17, 6, 3, 22.00, NULL, 'served', '2026-04-10 23:25:46', '2026-04-10 23:25:46'),
+	(48, 17, 8, 2, 30.00, NULL, 'served', '2026-04-10 23:25:46', '2026-04-10 23:25:46'),
+	(49, 17, 7, 2, 18.00, NULL, 'served', '2026-04-10 23:25:46', '2026-04-10 23:25:46'),
+	(50, 18, 1, 1, 12.00, NULL, 'served', '2025-12-10 23:25:46', '2025-12-10 23:25:46'),
+	(51, 18, 10, 3, 38.00, NULL, 'served', '2025-12-10 23:25:46', '2025-12-10 23:25:46'),
+	(52, 19, 2, 2, 35.00, NULL, 'served', '2025-08-06 23:25:46', '2025-08-06 23:25:46'),
+	(53, 19, 6, 1, 22.00, NULL, 'served', '2025-08-06 23:25:46', '2025-08-06 23:25:46'),
+	(54, 19, 1, 3, 12.00, NULL, 'served', '2025-08-06 23:25:46', '2025-08-06 23:25:46'),
+	(55, 20, 2, 1, 35.00, NULL, 'served', '2025-07-19 23:25:46', '2025-07-19 23:25:46'),
+	(56, 21, 4, 2, 6.00, NULL, 'served', '2025-07-23 23:25:46', '2025-07-23 23:25:46'),
+	(57, 21, 5, 1, 15.00, NULL, 'served', '2025-07-23 23:25:46', '2025-07-23 23:25:46'),
+	(58, 21, 3, 3, 8.00, NULL, 'served', '2025-07-23 23:25:46', '2025-07-23 23:25:46'),
+	(59, 21, 5, 2, 15.00, NULL, 'served', '2025-07-23 23:25:46', '2025-07-23 23:25:46'),
+	(60, 22, 9, 2, 25.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(61, 22, 3, 3, 8.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(62, 22, 8, 1, 30.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(63, 22, 5, 3, 15.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(64, 23, 1, 1, 12.00, NULL, 'served', '2025-10-25 23:25:46', '2025-10-25 23:25:46'),
+	(65, 23, 2, 1, 35.00, NULL, 'served', '2025-10-25 23:25:46', '2025-10-25 23:25:46'),
+	(66, 24, 7, 2, 18.00, NULL, 'served', '2025-07-02 23:25:46', '2025-07-02 23:25:46'),
+	(67, 24, 7, 2, 18.00, NULL, 'served', '2025-07-02 23:25:46', '2025-07-02 23:25:46'),
+	(68, 25, 9, 2, 25.00, NULL, 'served', '2025-10-15 23:25:46', '2025-10-15 23:25:46'),
+	(69, 25, 8, 2, 30.00, NULL, 'served', '2025-10-15 23:25:46', '2025-10-15 23:25:46'),
+	(70, 25, 6, 2, 22.00, NULL, 'served', '2025-10-15 23:25:46', '2025-10-15 23:25:46'),
+	(71, 25, 7, 2, 18.00, NULL, 'served', '2025-10-15 23:25:46', '2025-10-15 23:25:46'),
+	(72, 26, 2, 1, 35.00, NULL, 'served', '2026-03-13 23:25:46', '2026-03-13 23:25:46'),
+	(73, 27, 8, 2, 30.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(74, 27, 1, 1, 12.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(75, 27, 8, 2, 30.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(76, 27, 7, 1, 18.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(77, 28, 10, 1, 38.00, NULL, 'served', '2025-12-21 23:25:46', '2025-12-21 23:25:46'),
+	(78, 28, 1, 1, 12.00, NULL, 'served', '2025-12-21 23:25:46', '2025-12-21 23:25:46'),
+	(79, 28, 3, 1, 8.00, NULL, 'served', '2025-12-21 23:25:46', '2025-12-21 23:25:46'),
+	(80, 29, 2, 1, 35.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(81, 29, 3, 3, 8.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(82, 29, 5, 1, 15.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(83, 30, 5, 1, 15.00, NULL, 'served', '2025-10-21 23:25:46', '2025-10-21 23:25:46'),
+	(84, 30, 7, 2, 18.00, NULL, 'served', '2025-10-21 23:25:46', '2025-10-21 23:25:46'),
+	(85, 31, 1, 1, 12.00, NULL, 'served', '2025-08-02 23:25:46', '2025-08-02 23:25:46'),
+	(86, 32, 1, 2, 12.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(87, 32, 9, 3, 25.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(88, 32, 10, 3, 38.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(89, 33, 10, 1, 38.00, NULL, 'served', '2025-11-20 23:25:46', '2025-11-20 23:25:46'),
+	(90, 33, 4, 1, 6.00, NULL, 'served', '2025-11-20 23:25:46', '2025-11-20 23:25:46'),
+	(91, 33, 1, 2, 12.00, NULL, 'served', '2025-11-20 23:25:46', '2025-11-20 23:25:46'),
+	(92, 34, 1, 3, 12.00, NULL, 'served', '2025-06-03 23:25:46', '2025-06-03 23:25:46'),
+	(93, 34, 7, 3, 18.00, NULL, 'served', '2025-06-03 23:25:46', '2025-06-03 23:25:46'),
+	(94, 34, 9, 2, 25.00, NULL, 'served', '2025-06-03 23:25:46', '2025-06-03 23:25:46'),
+	(95, 35, 6, 2, 22.00, NULL, 'served', '2025-12-30 23:25:46', '2025-12-30 23:25:46'),
+	(96, 36, 2, 1, 35.00, NULL, 'served', '2025-06-06 23:25:46', '2025-06-06 23:25:46'),
+	(97, 36, 6, 2, 22.00, NULL, 'served', '2025-06-06 23:25:46', '2025-06-06 23:25:46'),
+	(98, 37, 9, 2, 25.00, NULL, 'served', '2026-03-31 23:25:46', '2026-03-31 23:25:46'),
+	(99, 37, 2, 2, 35.00, NULL, 'served', '2026-03-31 23:25:46', '2026-03-31 23:25:46'),
+	(100, 37, 4, 2, 6.00, NULL, 'served', '2026-03-31 23:25:46', '2026-03-31 23:25:46'),
+	(101, 37, 5, 3, 15.00, NULL, 'served', '2026-03-31 23:25:46', '2026-03-31 23:25:46'),
+	(102, 38, 5, 3, 15.00, NULL, 'served', '2025-10-07 23:25:46', '2025-10-07 23:25:46'),
+	(103, 39, 5, 2, 15.00, NULL, 'served', '2025-06-27 23:25:46', '2025-06-27 23:25:46'),
+	(104, 39, 2, 1, 35.00, NULL, 'served', '2025-06-27 23:25:46', '2025-06-27 23:25:46'),
+	(105, 40, 9, 1, 25.00, NULL, 'served', '2026-02-24 23:25:46', '2026-02-24 23:25:46'),
+	(106, 40, 5, 2, 15.00, NULL, 'served', '2026-02-24 23:25:46', '2026-02-24 23:25:46'),
+	(107, 41, 5, 2, 15.00, NULL, 'served', '2025-06-09 23:25:46', '2025-06-09 23:25:46'),
+	(108, 41, 1, 3, 12.00, NULL, 'served', '2025-06-09 23:25:46', '2025-06-09 23:25:46'),
+	(109, 41, 7, 3, 18.00, NULL, 'served', '2025-06-09 23:25:46', '2025-06-09 23:25:46'),
+	(110, 42, 2, 1, 35.00, NULL, 'served', '2025-08-17 23:25:46', '2025-08-17 23:25:46'),
+	(111, 42, 10, 3, 38.00, NULL, 'served', '2025-08-17 23:25:46', '2025-08-17 23:25:46'),
+	(112, 42, 10, 2, 38.00, NULL, 'served', '2025-08-17 23:25:46', '2025-08-17 23:25:46'),
+	(113, 43, 4, 2, 6.00, NULL, 'served', '2026-03-16 23:25:46', '2026-03-16 23:25:46'),
+	(114, 43, 3, 3, 8.00, NULL, 'served', '2026-03-16 23:25:46', '2026-03-16 23:25:46'),
+	(115, 43, 9, 3, 25.00, NULL, 'served', '2026-03-16 23:25:46', '2026-03-16 23:25:46'),
+	(116, 43, 5, 3, 15.00, NULL, 'served', '2026-03-16 23:25:46', '2026-03-16 23:25:46'),
+	(117, 44, 5, 1, 15.00, NULL, 'served', '2025-09-15 23:25:46', '2025-09-15 23:25:46'),
+	(118, 44, 5, 3, 15.00, NULL, 'served', '2025-09-15 23:25:46', '2025-09-15 23:25:46'),
+	(119, 44, 10, 3, 38.00, NULL, 'served', '2025-09-15 23:25:46', '2025-09-15 23:25:46'),
+	(120, 44, 3, 1, 8.00, NULL, 'served', '2025-09-15 23:25:46', '2025-09-15 23:25:46'),
+	(121, 45, 2, 3, 35.00, NULL, 'served', '2026-03-03 23:25:46', '2026-03-03 23:25:46'),
+	(122, 45, 7, 3, 18.00, NULL, 'served', '2026-03-03 23:25:46', '2026-03-03 23:25:46'),
+	(123, 45, 9, 1, 25.00, NULL, 'served', '2026-03-03 23:25:46', '2026-03-03 23:25:46'),
+	(124, 45, 9, 2, 25.00, NULL, 'served', '2026-03-03 23:25:46', '2026-03-03 23:25:46'),
+	(125, 46, 10, 2, 38.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(126, 46, 5, 3, 15.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(127, 46, 2, 1, 35.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(128, 46, 2, 2, 35.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(129, 47, 1, 3, 12.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(130, 47, 9, 1, 25.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(131, 47, 7, 3, 18.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(132, 47, 3, 1, 8.00, NULL, 'served', '2026-04-23 23:25:46', '2026-04-23 23:25:46'),
+	(133, 48, 4, 2, 6.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(134, 48, 4, 3, 6.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(135, 49, 2, 2, 35.00, NULL, 'served', '2025-10-06 23:25:46', '2025-10-06 23:25:46'),
+	(136, 49, 8, 1, 30.00, NULL, 'served', '2025-10-06 23:25:46', '2025-10-06 23:25:46'),
+	(137, 49, 5, 3, 15.00, NULL, 'served', '2025-10-06 23:25:46', '2025-10-06 23:25:46'),
+	(138, 50, 6, 1, 22.00, NULL, 'served', '2025-09-23 23:25:46', '2025-09-23 23:25:46'),
+	(139, 50, 3, 2, 8.00, NULL, 'served', '2025-09-23 23:25:46', '2025-09-23 23:25:46'),
+	(140, 50, 4, 1, 6.00, NULL, 'served', '2025-09-23 23:25:46', '2025-09-23 23:25:46'),
+	(141, 50, 1, 3, 12.00, NULL, 'served', '2025-09-23 23:25:46', '2025-09-23 23:25:46'),
+	(142, 51, 8, 2, 30.00, NULL, 'served', '2025-12-26 23:25:46', '2025-12-26 23:25:46'),
+	(143, 51, 9, 1, 25.00, NULL, 'served', '2025-12-26 23:25:46', '2025-12-26 23:25:46'),
+	(144, 51, 2, 3, 35.00, NULL, 'served', '2025-12-26 23:25:46', '2025-12-26 23:25:46'),
+	(145, 52, 8, 3, 30.00, NULL, 'served', '2025-10-05 23:25:46', '2025-10-05 23:25:46'),
+	(146, 53, 1, 3, 12.00, NULL, 'served', '2025-05-25 23:25:46', '2025-05-25 23:25:46'),
+	(147, 53, 10, 2, 38.00, NULL, 'served', '2025-05-25 23:25:46', '2025-05-25 23:25:46'),
+	(148, 54, 6, 1, 22.00, NULL, 'served', '2026-02-05 23:25:46', '2026-02-05 23:25:46'),
+	(149, 54, 6, 2, 22.00, NULL, 'served', '2026-02-05 23:25:46', '2026-02-05 23:25:46'),
+	(150, 54, 10, 3, 38.00, NULL, 'served', '2026-02-05 23:25:46', '2026-02-05 23:25:46'),
+	(151, 54, 1, 2, 12.00, NULL, 'served', '2026-02-05 23:25:46', '2026-02-05 23:25:46'),
+	(152, 55, 2, 3, 35.00, NULL, 'served', '2025-07-18 23:25:46', '2025-07-18 23:25:46'),
+	(153, 55, 4, 1, 6.00, NULL, 'served', '2025-07-18 23:25:46', '2025-07-18 23:25:46'),
+	(154, 55, 3, 2, 8.00, NULL, 'served', '2025-07-18 23:25:46', '2025-07-18 23:25:46'),
+	(155, 55, 5, 1, 15.00, NULL, 'served', '2025-07-18 23:25:46', '2025-07-18 23:25:46'),
+	(156, 56, 6, 2, 22.00, NULL, 'served', '2025-11-30 23:25:46', '2025-11-30 23:25:46'),
+	(157, 57, 2, 3, 35.00, NULL, 'served', '2026-03-27 23:25:46', '2026-03-27 23:25:46'),
+	(158, 57, 3, 2, 8.00, NULL, 'served', '2026-03-27 23:25:46', '2026-03-27 23:25:46'),
+	(159, 58, 8, 1, 30.00, NULL, 'served', '2025-10-20 23:25:46', '2025-10-20 23:25:46'),
+	(160, 59, 1, 2, 12.00, NULL, 'served', '2025-09-29 23:25:46', '2025-09-29 23:25:46'),
+	(161, 59, 9, 3, 25.00, NULL, 'served', '2025-09-29 23:25:46', '2025-09-29 23:25:46'),
+	(162, 59, 9, 3, 25.00, NULL, 'served', '2025-09-29 23:25:46', '2025-09-29 23:25:46'),
+	(163, 59, 4, 3, 6.00, NULL, 'served', '2025-09-29 23:25:46', '2025-09-29 23:25:46'),
+	(164, 60, 8, 1, 30.00, NULL, 'served', '2026-02-22 23:25:46', '2026-02-22 23:25:46'),
+	(165, 60, 6, 1, 22.00, NULL, 'served', '2026-02-22 23:25:46', '2026-02-22 23:25:46'),
+	(166, 60, 2, 3, 35.00, NULL, 'served', '2026-02-22 23:25:46', '2026-02-22 23:25:46'),
+	(167, 60, 2, 2, 35.00, NULL, 'served', '2026-02-22 23:25:46', '2026-02-22 23:25:46'),
+	(168, 61, 8, 2, 30.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(169, 61, 9, 3, 25.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(170, 61, 1, 3, 12.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(171, 62, 9, 3, 25.00, NULL, 'served', '2025-11-21 23:25:46', '2025-11-21 23:25:46'),
+	(172, 62, 10, 2, 38.00, NULL, 'served', '2025-11-21 23:25:46', '2025-11-21 23:25:46'),
+	(173, 63, 2, 1, 35.00, NULL, 'served', '2026-01-08 23:25:46', '2026-01-08 23:25:46'),
+	(174, 63, 7, 2, 18.00, NULL, 'served', '2026-01-08 23:25:46', '2026-01-08 23:25:46'),
+	(175, 63, 5, 2, 15.00, NULL, 'served', '2026-01-08 23:25:46', '2026-01-08 23:25:46'),
+	(176, 63, 9, 2, 25.00, NULL, 'served', '2026-01-08 23:25:46', '2026-01-08 23:25:46'),
+	(177, 64, 8, 3, 30.00, NULL, 'served', '2026-01-16 23:25:46', '2026-01-16 23:25:46'),
+	(178, 64, 9, 2, 25.00, NULL, 'served', '2026-01-16 23:25:46', '2026-01-16 23:25:46'),
+	(179, 65, 6, 3, 22.00, NULL, 'served', '2025-05-07 23:25:46', '2025-05-07 23:25:46'),
+	(180, 65, 3, 1, 8.00, NULL, 'served', '2025-05-07 23:25:46', '2025-05-07 23:25:46'),
+	(181, 65, 7, 2, 18.00, NULL, 'served', '2025-05-07 23:25:46', '2025-05-07 23:25:46'),
+	(182, 65, 7, 2, 18.00, NULL, 'served', '2025-05-07 23:25:46', '2025-05-07 23:25:46'),
+	(183, 66, 1, 3, 12.00, NULL, 'served', '2025-06-17 23:25:46', '2025-06-17 23:25:46'),
+	(184, 66, 10, 2, 38.00, NULL, 'served', '2025-06-17 23:25:46', '2025-06-17 23:25:46'),
+	(185, 66, 1, 2, 12.00, NULL, 'served', '2025-06-17 23:25:46', '2025-06-17 23:25:46'),
+	(186, 67, 2, 1, 35.00, NULL, 'served', '2025-09-22 23:25:46', '2025-09-22 23:25:46'),
+	(187, 67, 5, 2, 15.00, NULL, 'served', '2025-09-22 23:25:46', '2025-09-22 23:25:46'),
+	(188, 68, 2, 1, 35.00, NULL, 'served', '2025-10-17 23:25:46', '2025-10-17 23:25:46'),
+	(189, 69, 10, 1, 38.00, NULL, 'served', '2025-11-05 23:25:46', '2025-11-05 23:25:46'),
+	(190, 70, 5, 2, 15.00, NULL, 'served', '2025-08-06 23:25:46', '2025-08-06 23:25:46'),
+	(191, 70, 6, 1, 22.00, NULL, 'served', '2025-08-06 23:25:46', '2025-08-06 23:25:46'),
+	(192, 71, 6, 3, 22.00, NULL, 'served', '2025-06-12 23:25:46', '2025-06-12 23:25:46'),
+	(193, 72, 6, 3, 22.00, NULL, 'served', '2025-05-12 23:25:46', '2025-05-12 23:25:46'),
+	(194, 73, 7, 3, 18.00, NULL, 'served', '2025-08-16 23:25:46', '2025-08-16 23:25:46'),
+	(195, 73, 5, 2, 15.00, NULL, 'served', '2025-08-16 23:25:46', '2025-08-16 23:25:46'),
+	(196, 73, 4, 2, 6.00, NULL, 'served', '2025-08-16 23:25:46', '2025-08-16 23:25:46'),
+	(197, 74, 7, 3, 18.00, NULL, 'served', '2025-11-09 23:25:46', '2025-11-09 23:25:46'),
+	(198, 74, 3, 1, 8.00, NULL, 'served', '2025-11-09 23:25:46', '2025-11-09 23:25:46'),
+	(199, 74, 3, 2, 8.00, NULL, 'served', '2025-11-09 23:25:46', '2025-11-09 23:25:46'),
+	(200, 75, 4, 1, 6.00, NULL, 'served', '2025-09-25 23:25:46', '2025-09-25 23:25:46'),
+	(201, 75, 2, 3, 35.00, NULL, 'served', '2025-09-25 23:25:46', '2025-09-25 23:25:46'),
+	(202, 75, 10, 2, 38.00, NULL, 'served', '2025-09-25 23:25:46', '2025-09-25 23:25:46'),
+	(203, 75, 3, 2, 8.00, NULL, 'served', '2025-09-25 23:25:46', '2025-09-25 23:25:46'),
+	(204, 76, 2, 3, 35.00, NULL, 'served', '2025-10-13 23:25:46', '2025-10-13 23:25:46'),
+	(205, 76, 7, 1, 18.00, NULL, 'served', '2025-10-13 23:25:46', '2025-10-13 23:25:46'),
+	(206, 77, 10, 1, 38.00, NULL, 'served', '2026-04-09 23:25:46', '2026-04-09 23:25:46'),
+	(207, 77, 6, 3, 22.00, NULL, 'served', '2026-04-09 23:25:46', '2026-04-09 23:25:46'),
+	(208, 78, 6, 3, 22.00, NULL, 'served', '2025-05-10 23:25:46', '2025-05-10 23:25:46'),
+	(209, 78, 8, 2, 30.00, NULL, 'served', '2025-05-10 23:25:46', '2025-05-10 23:25:46'),
+	(210, 78, 1, 1, 12.00, NULL, 'served', '2025-05-10 23:25:46', '2025-05-10 23:25:46'),
+	(211, 79, 3, 3, 8.00, NULL, 'served', '2025-09-08 23:25:46', '2025-09-08 23:25:46'),
+	(212, 79, 3, 2, 8.00, NULL, 'served', '2025-09-08 23:25:46', '2025-09-08 23:25:46'),
+	(213, 79, 3, 3, 8.00, NULL, 'served', '2025-09-08 23:25:46', '2025-09-08 23:25:46'),
+	(214, 80, 4, 3, 6.00, NULL, 'served', '2025-09-14 23:25:46', '2025-09-14 23:25:46'),
+	(215, 80, 1, 3, 12.00, NULL, 'served', '2025-09-14 23:25:46', '2025-09-14 23:25:46'),
+	(216, 81, 3, 2, 8.00, NULL, 'served', '2026-03-28 23:25:46', '2026-03-28 23:25:46'),
+	(217, 81, 9, 2, 25.00, NULL, 'served', '2026-03-28 23:25:46', '2026-03-28 23:25:46'),
+	(218, 82, 2, 2, 35.00, NULL, 'served', '2025-07-11 23:25:46', '2025-07-11 23:25:46'),
+	(219, 83, 2, 3, 35.00, NULL, 'served', '2026-04-28 23:25:46', '2026-04-28 23:25:46'),
+	(220, 84, 7, 2, 18.00, NULL, 'served', '2025-12-30 23:25:46', '2025-12-30 23:25:46'),
+	(221, 84, 7, 2, 18.00, NULL, 'served', '2025-12-30 23:25:46', '2025-12-30 23:25:46'),
+	(222, 85, 3, 1, 8.00, NULL, 'served', '2025-12-24 23:25:46', '2025-12-24 23:25:46'),
+	(223, 85, 4, 3, 6.00, NULL, 'served', '2025-12-24 23:25:46', '2025-12-24 23:25:46'),
+	(224, 86, 8, 1, 30.00, NULL, 'served', '2026-01-21 23:25:46', '2026-01-21 23:25:46'),
+	(225, 86, 8, 3, 30.00, NULL, 'served', '2026-01-21 23:25:46', '2026-01-21 23:25:46'),
+	(226, 87, 10, 2, 38.00, NULL, 'served', '2025-11-28 23:25:46', '2025-11-28 23:25:46'),
+	(227, 87, 5, 1, 15.00, NULL, 'served', '2025-11-28 23:25:46', '2025-11-28 23:25:46'),
+	(228, 88, 9, 1, 25.00, NULL, 'served', '2026-04-11 23:25:46', '2026-04-11 23:25:46'),
+	(229, 88, 10, 3, 38.00, NULL, 'served', '2026-04-11 23:25:46', '2026-04-11 23:25:46'),
+	(230, 88, 5, 3, 15.00, NULL, 'served', '2026-04-11 23:25:46', '2026-04-11 23:25:46'),
+	(231, 88, 10, 1, 38.00, NULL, 'served', '2026-04-11 23:25:46', '2026-04-11 23:25:46'),
+	(232, 89, 5, 2, 15.00, NULL, 'served', '2026-02-14 23:25:46', '2026-02-14 23:25:46'),
+	(233, 89, 8, 1, 30.00, NULL, 'served', '2026-02-14 23:25:46', '2026-02-14 23:25:46'),
+	(234, 89, 10, 3, 38.00, NULL, 'served', '2026-02-14 23:25:46', '2026-02-14 23:25:46'),
+	(235, 90, 9, 1, 25.00, NULL, 'served', '2025-07-08 23:25:46', '2025-07-08 23:25:46'),
+	(236, 91, 9, 3, 25.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(237, 91, 5, 2, 15.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(238, 91, 3, 3, 8.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(239, 91, 5, 2, 15.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(240, 92, 4, 1, 6.00, NULL, 'served', '2025-12-22 23:25:46', '2025-12-22 23:25:46'),
+	(241, 92, 5, 1, 15.00, NULL, 'served', '2025-12-22 23:25:46', '2025-12-22 23:25:46'),
+	(242, 93, 7, 3, 18.00, NULL, 'served', '2025-09-18 23:25:46', '2025-09-18 23:25:46'),
+	(243, 93, 9, 1, 25.00, NULL, 'served', '2025-09-18 23:25:46', '2025-09-18 23:25:46'),
+	(244, 93, 6, 2, 22.00, NULL, 'served', '2025-09-18 23:25:46', '2025-09-18 23:25:46'),
+	(245, 94, 7, 1, 18.00, NULL, 'served', '2025-09-16 23:25:46', '2025-09-16 23:25:46'),
+	(246, 94, 7, 2, 18.00, NULL, 'served', '2025-09-16 23:25:46', '2025-09-16 23:25:46'),
+	(247, 94, 10, 3, 38.00, NULL, 'served', '2025-09-16 23:25:46', '2025-09-16 23:25:46'),
+	(248, 94, 1, 2, 12.00, NULL, 'served', '2025-09-16 23:25:46', '2025-09-16 23:25:46'),
+	(249, 95, 6, 3, 22.00, NULL, 'served', '2025-06-12 23:25:46', '2025-06-12 23:25:46'),
+	(250, 95, 8, 3, 30.00, NULL, 'served', '2025-06-12 23:25:46', '2025-06-12 23:25:46'),
+	(251, 95, 8, 2, 30.00, NULL, 'served', '2025-06-12 23:25:46', '2025-06-12 23:25:46'),
+	(252, 95, 5, 3, 15.00, NULL, 'served', '2025-06-12 23:25:46', '2025-06-12 23:25:46'),
+	(253, 96, 3, 3, 8.00, NULL, 'served', '2025-10-19 23:25:46', '2025-10-19 23:25:46'),
+	(254, 96, 9, 1, 25.00, NULL, 'served', '2025-10-19 23:25:46', '2025-10-19 23:25:46'),
+	(255, 96, 4, 2, 6.00, NULL, 'served', '2025-10-19 23:25:46', '2025-10-19 23:25:46'),
+	(256, 96, 6, 3, 22.00, NULL, 'served', '2025-10-19 23:25:46', '2025-10-19 23:25:46'),
+	(257, 97, 4, 1, 6.00, NULL, 'served', '2025-08-15 23:25:46', '2025-08-15 23:25:46'),
+	(258, 97, 9, 2, 25.00, NULL, 'served', '2025-08-15 23:25:46', '2025-08-15 23:25:46'),
+	(259, 98, 4, 2, 6.00, NULL, 'served', '2026-02-13 23:25:46', '2026-02-13 23:25:46'),
+	(260, 98, 3, 1, 8.00, NULL, 'served', '2026-02-13 23:25:46', '2026-02-13 23:25:46'),
+	(261, 98, 3, 3, 8.00, NULL, 'served', '2026-02-13 23:25:46', '2026-02-13 23:25:46'),
+	(262, 99, 4, 2, 6.00, NULL, 'served', '2026-03-30 23:25:46', '2026-03-30 23:25:46'),
+	(263, 99, 9, 3, 25.00, NULL, 'served', '2026-03-30 23:25:46', '2026-03-30 23:25:46'),
+	(264, 99, 5, 2, 15.00, NULL, 'served', '2026-03-30 23:25:46', '2026-03-30 23:25:46'),
+	(265, 100, 3, 2, 8.00, NULL, 'served', '2025-08-23 23:25:46', '2025-08-23 23:25:46'),
+	(266, 100, 6, 2, 22.00, NULL, 'served', '2025-08-23 23:25:46', '2025-08-23 23:25:46'),
+	(267, 101, 8, 1, 30.00, NULL, 'served', '2025-07-30 23:25:46', '2025-07-30 23:25:46'),
+	(268, 101, 3, 2, 8.00, NULL, 'served', '2025-07-30 23:25:46', '2025-07-30 23:25:46'),
+	(269, 101, 4, 1, 6.00, NULL, 'served', '2025-07-30 23:25:46', '2025-07-30 23:25:46'),
+	(270, 102, 3, 2, 8.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(271, 102, 5, 1, 15.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(272, 102, 3, 2, 8.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(273, 102, 5, 1, 15.00, NULL, 'served', '2025-07-09 23:25:46', '2025-07-09 23:25:46'),
+	(274, 103, 3, 1, 8.00, NULL, 'served', '2025-12-10 23:25:46', '2025-12-10 23:25:46'),
+	(275, 103, 6, 2, 22.00, NULL, 'served', '2025-12-10 23:25:46', '2025-12-10 23:25:46'),
+	(276, 104, 1, 2, 12.00, NULL, 'served', '2026-02-17 23:25:46', '2026-02-17 23:25:46'),
+	(277, 104, 6, 1, 22.00, NULL, 'served', '2026-02-17 23:25:46', '2026-02-17 23:25:46'),
+	(278, 104, 1, 2, 12.00, NULL, 'served', '2026-02-17 23:25:46', '2026-02-17 23:25:46'),
+	(279, 104, 10, 3, 38.00, NULL, 'served', '2026-02-17 23:25:46', '2026-02-17 23:25:46'),
+	(280, 105, 10, 3, 38.00, NULL, 'served', '2026-04-25 23:25:46', '2026-04-25 23:25:46'),
+	(281, 105, 6, 1, 22.00, NULL, 'served', '2026-04-25 23:25:46', '2026-04-25 23:25:46'),
+	(282, 105, 5, 2, 15.00, NULL, 'served', '2026-04-25 23:25:46', '2026-04-25 23:25:46'),
+	(283, 106, 1, 2, 12.00, NULL, 'served', '2025-05-24 23:25:46', '2025-05-24 23:25:46'),
+	(284, 106, 2, 2, 35.00, NULL, 'served', '2025-05-24 23:25:46', '2025-05-24 23:25:46'),
+	(285, 106, 9, 2, 25.00, NULL, 'served', '2025-05-24 23:25:46', '2025-05-24 23:25:46'),
+	(286, 106, 5, 3, 15.00, NULL, 'served', '2025-05-24 23:25:46', '2025-05-24 23:25:46'),
+	(287, 107, 10, 3, 38.00, NULL, 'served', '2025-06-01 23:25:46', '2025-06-01 23:25:46'),
+	(288, 107, 6, 1, 22.00, NULL, 'served', '2025-06-01 23:25:46', '2025-06-01 23:25:46'),
+	(289, 108, 1, 1, 12.00, NULL, 'served', '2026-02-01 23:25:46', '2026-02-01 23:25:46'),
+	(290, 109, 9, 2, 25.00, NULL, 'served', '2026-03-02 23:25:46', '2026-03-02 23:25:46'),
+	(291, 109, 1, 2, 12.00, NULL, 'served', '2026-03-02 23:25:46', '2026-03-02 23:25:46'),
+	(292, 109, 7, 3, 18.00, NULL, 'served', '2026-03-02 23:25:46', '2026-03-02 23:25:46'),
+	(293, 109, 3, 2, 8.00, NULL, 'served', '2026-03-02 23:25:46', '2026-03-02 23:25:46'),
+	(294, 110, 6, 2, 22.00, NULL, 'served', '2026-04-15 23:25:46', '2026-04-15 23:25:46'),
+	(295, 110, 8, 2, 30.00, NULL, 'served', '2026-04-15 23:25:46', '2026-04-15 23:25:46'),
+	(296, 110, 7, 1, 18.00, NULL, 'served', '2026-04-15 23:25:46', '2026-04-15 23:25:46'),
+	(297, 110, 6, 1, 22.00, NULL, 'served', '2026-04-15 23:25:46', '2026-04-15 23:25:46'),
+	(298, 111, 2, 2, 35.00, NULL, 'served', '2025-06-22 23:25:46', '2025-06-22 23:25:46'),
+	(299, 111, 1, 3, 12.00, NULL, 'served', '2025-06-22 23:25:46', '2025-06-22 23:25:46'),
+	(300, 111, 2, 3, 35.00, NULL, 'served', '2025-06-22 23:25:46', '2025-06-22 23:25:46'),
+	(301, 112, 5, 3, 15.00, NULL, 'served', '2025-07-03 23:25:46', '2025-07-03 23:25:46'),
+	(302, 113, 4, 3, 6.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(303, 113, 10, 2, 38.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(304, 113, 10, 3, 38.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(305, 113, 6, 3, 22.00, NULL, 'served', '2025-05-17 23:25:46', '2025-05-17 23:25:46'),
+	(306, 114, 8, 3, 30.00, NULL, 'served', '2026-02-28 23:25:46', '2026-02-28 23:25:46'),
+	(307, 114, 5, 1, 15.00, NULL, 'served', '2026-02-28 23:25:46', '2026-02-28 23:25:46'),
+	(308, 114, 2, 3, 35.00, NULL, 'served', '2026-02-28 23:25:46', '2026-02-28 23:25:46'),
+	(309, 114, 9, 1, 25.00, NULL, 'served', '2026-02-28 23:25:46', '2026-02-28 23:25:46'),
+	(310, 115, 10, 1, 38.00, NULL, 'served', '2025-06-21 23:25:46', '2025-06-21 23:25:46'),
+	(311, 116, 8, 3, 30.00, NULL, 'served', '2025-12-09 23:25:46', '2025-12-09 23:25:46'),
+	(312, 116, 3, 1, 8.00, NULL, 'served', '2025-12-09 23:25:46', '2025-12-09 23:25:46'),
+	(313, 117, 6, 2, 22.00, NULL, 'served', '2025-11-02 23:25:46', '2025-11-02 23:25:46'),
+	(314, 117, 4, 2, 6.00, NULL, 'served', '2025-11-02 23:25:46', '2025-11-02 23:25:46'),
+	(315, 118, 6, 3, 22.00, NULL, 'served', '2026-01-11 23:25:46', '2026-01-11 23:25:46'),
+	(316, 119, 9, 2, 25.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(317, 119, 7, 3, 18.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(318, 119, 2, 1, 35.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(319, 119, 3, 1, 8.00, NULL, 'served', '2026-04-18 23:25:46', '2026-04-18 23:25:46'),
+	(320, 120, 9, 2, 25.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(321, 120, 8, 3, 30.00, NULL, 'served', '2025-05-29 23:25:46', '2025-05-29 23:25:46'),
+	(322, 121, 4, 2, 6.00, NULL, 'served', '2025-08-15 23:25:46', '2025-08-15 23:25:46'),
+	(323, 122, 3, 1, 8.00, NULL, 'served', '2025-06-04 23:25:46', '2025-06-04 23:25:46'),
+	(324, 122, 1, 3, 12.00, NULL, 'served', '2025-06-04 23:25:46', '2025-06-04 23:25:46'),
+	(325, 122, 9, 3, 25.00, NULL, 'served', '2025-06-04 23:25:46', '2025-06-04 23:25:46'),
+	(326, 123, 8, 2, 30.00, NULL, 'served', '2026-02-20 23:25:46', '2026-02-20 23:25:46'),
+	(327, 123, 6, 3, 22.00, NULL, 'served', '2026-02-20 23:25:46', '2026-02-20 23:25:46'),
+	(328, 124, 8, 3, 30.00, NULL, 'served', '2025-05-30 23:25:46', '2025-05-30 23:25:46'),
+	(329, 125, 9, 1, 25.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(330, 125, 5, 1, 15.00, NULL, 'served', '2026-03-18 23:25:46', '2026-03-18 23:25:46'),
+	(331, 126, 9, 2, 25.00, NULL, 'served', '2025-10-01 23:25:46', '2025-10-01 23:25:46'),
+	(332, 126, 10, 2, 38.00, NULL, 'served', '2025-10-01 23:25:46', '2025-10-01 23:25:46'),
+	(333, 126, 7, 2, 18.00, NULL, 'served', '2025-10-01 23:25:46', '2025-10-01 23:25:46'),
+	(334, 127, 4, 2, 6.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(335, 127, 6, 2, 22.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(336, 127, 10, 2, 38.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(337, 128, 9, 1, 25.00, NULL, 'served', '2025-11-14 23:25:46', '2025-11-14 23:25:46'),
+	(338, 128, 4, 2, 6.00, NULL, 'served', '2025-11-14 23:25:46', '2025-11-14 23:25:46'),
+	(339, 129, 8, 3, 30.00, NULL, 'served', '2025-09-11 23:25:46', '2025-09-11 23:25:46'),
+	(340, 129, 4, 2, 6.00, NULL, 'served', '2025-09-11 23:25:46', '2025-09-11 23:25:46'),
+	(341, 129, 10, 1, 38.00, NULL, 'served', '2025-09-11 23:25:46', '2025-09-11 23:25:46'),
+	(342, 129, 5, 3, 15.00, NULL, 'served', '2025-09-11 23:25:46', '2025-09-11 23:25:46'),
+	(343, 130, 4, 1, 6.00, NULL, 'served', '2025-10-16 23:25:46', '2025-10-16 23:25:46'),
+	(344, 130, 1, 2, 12.00, NULL, 'served', '2025-10-16 23:25:46', '2025-10-16 23:25:46'),
+	(345, 130, 4, 1, 6.00, NULL, 'served', '2025-10-16 23:25:46', '2025-10-16 23:25:46'),
+	(346, 130, 2, 1, 35.00, NULL, 'served', '2025-10-16 23:25:46', '2025-10-16 23:25:46'),
+	(347, 131, 3, 1, 8.00, NULL, 'served', '2026-03-10 23:25:46', '2026-03-10 23:25:46'),
+	(348, 131, 9, 1, 25.00, NULL, 'served', '2026-03-10 23:25:46', '2026-03-10 23:25:46'),
+	(349, 131, 3, 1, 8.00, NULL, 'served', '2026-03-10 23:25:46', '2026-03-10 23:25:46'),
+	(350, 132, 3, 2, 8.00, NULL, 'served', '2025-09-17 23:25:46', '2025-09-17 23:25:46'),
+	(351, 132, 4, 2, 6.00, NULL, 'served', '2025-09-17 23:25:46', '2025-09-17 23:25:46'),
+	(352, 133, 3, 2, 8.00, NULL, 'served', '2025-11-14 23:25:46', '2025-11-14 23:25:46'),
+	(353, 134, 5, 1, 15.00, NULL, 'served', '2025-05-19 23:25:46', '2025-05-19 23:25:46'),
+	(354, 134, 8, 3, 30.00, NULL, 'served', '2025-05-19 23:25:46', '2025-05-19 23:25:46'),
+	(355, 134, 6, 3, 22.00, NULL, 'served', '2025-05-19 23:25:46', '2025-05-19 23:25:46'),
+	(356, 135, 4, 2, 6.00, NULL, 'served', '2025-09-05 23:25:46', '2025-09-05 23:25:46'),
+	(357, 135, 4, 2, 6.00, NULL, 'served', '2025-09-05 23:25:46', '2025-09-05 23:25:46'),
+	(358, 135, 3, 1, 8.00, NULL, 'served', '2025-09-05 23:25:46', '2025-09-05 23:25:46'),
+	(359, 135, 5, 2, 15.00, NULL, 'served', '2025-09-05 23:25:46', '2025-09-05 23:25:46'),
+	(360, 136, 3, 1, 8.00, NULL, 'served', '2025-12-13 23:25:46', '2025-12-13 23:25:46'),
+	(361, 136, 9, 3, 25.00, NULL, 'served', '2025-12-13 23:25:46', '2025-12-13 23:25:46'),
+	(362, 137, 8, 1, 30.00, NULL, 'served', '2025-08-29 23:25:46', '2025-08-29 23:25:46'),
+	(363, 138, 1, 1, 12.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(364, 138, 7, 2, 18.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(365, 138, 4, 2, 6.00, NULL, 'served', '2025-05-08 23:25:46', '2025-05-08 23:25:46'),
+	(366, 139, 2, 2, 35.00, NULL, 'served', '2026-01-30 23:25:46', '2026-01-30 23:25:46'),
+	(367, 140, 10, 1, 38.00, NULL, 'served', '2025-11-05 23:25:46', '2025-11-05 23:25:46'),
+	(368, 140, 1, 3, 12.00, NULL, 'served', '2025-11-05 23:25:46', '2025-11-05 23:25:46'),
+	(369, 140, 5, 1, 15.00, NULL, 'served', '2025-11-05 23:25:46', '2025-11-05 23:25:46'),
+	(370, 141, 1, 2, 12.00, NULL, 'served', '2025-05-31 23:25:46', '2025-05-31 23:25:46'),
+	(371, 141, 2, 1, 35.00, NULL, 'served', '2025-05-31 23:25:46', '2025-05-31 23:25:46'),
+	(372, 141, 1, 2, 12.00, NULL, 'served', '2025-05-31 23:25:46', '2025-05-31 23:25:46'),
+	(373, 141, 8, 3, 30.00, NULL, 'served', '2025-05-31 23:25:46', '2025-05-31 23:25:46'),
+	(374, 142, 6, 1, 22.00, NULL, 'served', '2025-11-25 23:25:46', '2025-11-25 23:25:46'),
+	(375, 142, 5, 1, 15.00, NULL, 'served', '2025-11-25 23:25:46', '2025-11-25 23:25:46'),
+	(376, 142, 8, 1, 30.00, NULL, 'served', '2025-11-25 23:25:46', '2025-11-25 23:25:46'),
+	(377, 142, 2, 2, 35.00, NULL, 'served', '2025-11-25 23:25:46', '2025-11-25 23:25:46'),
+	(378, 143, 8, 3, 30.00, NULL, 'served', '2025-12-16 23:25:46', '2025-12-16 23:25:46'),
+	(379, 143, 4, 3, 6.00, NULL, 'served', '2025-12-16 23:25:46', '2025-12-16 23:25:46'),
+	(380, 143, 3, 3, 8.00, NULL, 'served', '2025-12-16 23:25:46', '2025-12-16 23:25:46'),
+	(381, 144, 2, 2, 35.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(382, 144, 8, 2, 30.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(383, 144, 3, 2, 8.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(384, 144, 4, 3, 6.00, NULL, 'served', '2025-07-25 23:25:46', '2025-07-25 23:25:46'),
+	(385, 145, 10, 1, 38.00, NULL, 'served', '2026-01-01 23:25:46', '2026-01-01 23:25:46'),
+	(386, 145, 8, 1, 30.00, NULL, 'served', '2026-01-01 23:25:46', '2026-01-01 23:25:46'),
+	(387, 145, 9, 1, 25.00, NULL, 'served', '2026-01-01 23:25:46', '2026-01-01 23:25:46'),
+	(388, 145, 8, 1, 30.00, NULL, 'served', '2026-01-01 23:25:46', '2026-01-01 23:25:46'),
+	(389, 146, 8, 2, 30.00, NULL, 'served', '2025-09-10 23:25:46', '2025-09-10 23:25:46'),
+	(390, 146, 9, 1, 25.00, NULL, 'served', '2025-09-10 23:25:46', '2025-09-10 23:25:46'),
+	(391, 146, 2, 2, 35.00, NULL, 'served', '2025-09-10 23:25:46', '2025-09-10 23:25:46'),
+	(392, 146, 3, 3, 8.00, NULL, 'served', '2025-09-10 23:25:46', '2025-09-10 23:25:46'),
+	(393, 147, 3, 3, 8.00, NULL, 'served', '2026-04-05 23:25:46', '2026-04-05 23:25:46'),
+	(394, 148, 2, 3, 35.00, NULL, 'served', '2025-06-22 23:25:46', '2025-06-22 23:25:46'),
+	(395, 148, 1, 1, 12.00, NULL, 'served', '2025-06-22 23:25:46', '2025-06-22 23:25:46'),
+	(396, 149, 4, 2, 6.00, NULL, 'served', '2025-07-17 23:25:46', '2025-07-17 23:25:46'),
+	(397, 149, 5, 1, 15.00, NULL, 'served', '2025-07-17 23:25:46', '2025-07-17 23:25:46'),
+	(398, 149, 10, 2, 38.00, NULL, 'served', '2025-07-17 23:25:46', '2025-07-17 23:25:46'),
+	(399, 149, 4, 1, 6.00, NULL, 'served', '2025-07-17 23:25:46', '2025-07-17 23:25:46'),
+	(400, 150, 6, 2, 22.00, NULL, 'served', '2025-08-09 23:25:46', '2025-08-09 23:25:46'),
+	(401, 151, 9, 2, 25.00, NULL, 'cooking', '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(402, 152, 4, 2, 6.00, NULL, 'cooking', '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(403, 153, 6, 2, 22.00, NULL, 'cooking', '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(404, 154, 2, 2, 35.00, NULL, 'pending', '2026-05-03 05:53:43', '2026-05-03 05:56:02'),
+	(405, 154, 7, 1, 18.00, NULL, 'pending', '2026-05-03 05:53:47', '2026-05-03 05:53:47'),
+	(406, 154, 1, 1, 12.00, NULL, 'pending', '2026-05-03 05:55:42', '2026-05-03 05:55:42'),
+	(407, 155, 8, 1, 30.00, NULL, 'pending', '2026-05-03 06:06:10', '2026-05-03 06:06:10'),
+	(408, 156, 7, 1, 18.00, NULL, 'pending', '2026-05-03 06:07:34', '2026-05-03 06:07:34'),
+	(409, 156, 8, 1, 30.00, NULL, 'pending', '2026-05-03 06:07:35', '2026-05-03 06:07:35'),
+	(410, 157, 4, 1, 6.00, NULL, 'pending', '2026-05-03 06:27:15', '2026-05-03 06:27:15'),
+	(411, 158, 1, 2, 12.00, NULL, 'pending', '2026-05-03 07:05:38', '2026-05-03 07:05:38'),
+	(412, 159, 3, 1, 8.00, NULL, 'pending', '2026-05-03 13:50:21', '2026-05-03 13:50:21'),
+	(413, 159, 6, 1, 22.00, NULL, 'pending', '2026-05-03 13:50:22', '2026-05-03 13:50:22'),
+	(414, 159, 8, 1, 30.00, NULL, 'pending', '2026-05-03 13:50:24', '2026-05-03 13:50:24'),
+	(415, 153, 5, 1, 15.00, NULL, 'pending', '2026-05-04 02:32:11', '2026-05-04 02:32:11'),
+	(416, 160, 1, 1, 12.00, NULL, 'served', '2026-05-17 23:34:27', '2026-05-17 23:34:27'),
+	(417, 160, 2, 1, 35.00, NULL, 'served', '2026-05-17 23:34:27', '2026-05-17 23:34:27'),
+	(418, 161, 1, 1, 12.00, NULL, 'served', '2026-05-18 00:06:59', '2026-05-18 00:06:59'),
+	(419, 161, 2, 1, 35.00, NULL, 'served', '2026-05-18 00:06:59', '2026-05-18 00:06:59'),
+	(420, 162, 1, 1, 12.00, NULL, 'served', '2026-05-18 05:40:17', '2026-05-18 05:40:17'),
+	(421, 162, 2, 1, 35.00, NULL, 'served', '2026-05-18 05:40:17', '2026-05-18 05:40:17'),
+	(422, 163, 1, 1, 12.00, NULL, 'served', '2026-05-18 05:43:51', '2026-05-18 05:43:51'),
+	(423, 163, 2, 1, 35.00, NULL, 'served', '2026-05-18 05:43:51', '2026-05-18 05:43:51'),
+	(424, 164, 1, 1, 12.00, NULL, 'served', '2026-05-18 05:49:23', '2026-05-18 05:49:23'),
+	(425, 164, 2, 1, 35.00, NULL, 'served', '2026-05-18 05:49:23', '2026-05-18 05:49:23'),
+	(426, 165, 1, 1, 12.00, NULL, 'served', '2026-05-18 05:54:35', '2026-05-18 05:54:35'),
+	(427, 165, 2, 1, 35.00, NULL, 'served', '2026-05-18 05:54:35', '2026-05-18 05:54:35'),
+	(428, 166, 1, 1, 12.00, NULL, 'served', '2026-05-18 06:02:26', '2026-05-18 06:02:26'),
+	(429, 166, 2, 1, 35.00, NULL, 'served', '2026-05-18 06:02:26', '2026-05-18 06:02:26'),
+	(430, 167, 1, 1, 12.00, NULL, 'served', '2026-05-18 07:13:53', '2026-05-18 07:13:53'),
+	(431, 167, 2, 1, 35.00, NULL, 'served', '2026-05-18 07:13:53', '2026-05-18 07:13:53');
+
+-- Volcando estructura para tabla restaurante_db.products
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `category_id` bigint unsigned NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `barcode` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `promotional_price` decimal(10,2) DEFAULT NULL,
+  `cost` decimal(10,2) DEFAULT NULL,
+  `stock` int DEFAULT NULL,
+  `is_saleable` tinyint(1) NOT NULL DEFAULT '1',
+  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `is_chef_recommendation` tinyint(1) NOT NULL DEFAULT '0',
+  `is_new` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `products_barcode_unique` (`barcode`),
+  KEY `products_category_id_foreign` (`category_id`),
+  CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.products: ~10 rows (aproximadamente)
+DELETE FROM `products`;
+INSERT INTO `products` (`id`, `category_id`, `name`, `barcode`, `code`, `price`, `promotional_price`, `cost`, `stock`, `is_saleable`, `image`, `is_active`, `is_chef_recommendation`, `is_new`, `created_at`, `updated_at`) VALUES
+	(1, 1, 'Tequeños', NULL, NULL, 12.00, NULL, NULL, 56, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-03 06:05:54'),
+	(2, 2, 'Lomo Saltado', NULL, NULL, 35.00, NULL, NULL, 23, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-03 06:05:54'),
+	(3, 3, 'Limonada Frozen', NULL, NULL, 8.00, NULL, NULL, 74, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(4, 4, 'Café Americano', NULL, NULL, 6.00, NULL, NULL, 79, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(5, 5, 'Cheesecake', NULL, NULL, 15.00, NULL, NULL, 87, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(6, 6, 'Ensalada César', NULL, NULL, 22.00, NULL, NULL, 48, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(7, 7, 'Dieta de Pollo', NULL, NULL, 18.00, NULL, NULL, 91, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-03 06:27:06'),
+	(8, 8, 'Pizza Hawaiana', NULL, NULL, 30.00, NULL, NULL, 66, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-03 06:27:06'),
+	(9, 9, 'Hamburguesa Royal', NULL, NULL, 25.00, NULL, NULL, 63, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(10, 10, 'Ceviche', NULL, NULL, 38.00, NULL, NULL, 86, 1, NULL, 1, 0, 0, '2026-05-01 23:25:46', '2026-05-01 23:25:46');
+
+-- Volcando estructura para tabla restaurante_db.product_ingredients
+CREATE TABLE IF NOT EXISTS `product_ingredients` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint unsigned NOT NULL,
+  `ingredient_id` bigint unsigned NOT NULL,
+  `quantity` decimal(10,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `product_ingredients_product_id_foreign` (`product_id`),
+  KEY `product_ingredients_ingredient_id_foreign` (`ingredient_id`),
+  CONSTRAINT `product_ingredients_ingredient_id_foreign` FOREIGN KEY (`ingredient_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `product_ingredients_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.product_ingredients: ~0 rows (aproximadamente)
+DELETE FROM `product_ingredients`;
+
+-- Volcando estructura para tabla restaurante_db.reservations
+CREATE TABLE IF NOT EXISTS `reservations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `client_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reservation_time` datetime NOT NULL,
+  `people` int NOT NULL,
+  `table_id` bigint unsigned DEFAULT NULL,
+  `note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `status` enum('pending','confirmed','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `reservations_table_id_foreign` (`table_id`),
+  CONSTRAINT `reservations_table_id_foreign` FOREIGN KEY (`table_id`) REFERENCES `tables` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.reservations: ~10 rows (aproximadamente)
+DELETE FROM `reservations`;
+INSERT INTO `reservations` (`id`, `client_name`, `phone`, `reservation_time`, `people`, `table_id`, `note`, `status`, `created_at`, `updated_at`) VALUES
+	(1, 'Reserva 1', '900100201', '2026-04-25 16:00:46', 6, 5, 'Reserva generada automáticamente', 'pending', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(2, 'Reserva 2', '900100202', '2026-04-28 18:00:46', 5, 9, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(3, 'Reserva 3', '900100203', '2026-05-07 18:00:46', 2, 8, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(4, 'Reserva 4', '900100204', '2026-05-09 12:00:46', 5, 3, 'Reserva generada automáticamente', 'pending', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(5, 'Reserva 5', '900100205', '2026-04-27 12:00:46', 4, 3, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(6, 'Reserva 6', '900100206', '2026-05-08 12:00:46', 6, 8, 'Reserva generada automáticamente', 'pending', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(7, 'Reserva 7', '900100207', '2026-05-05 16:00:46', 5, 1, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(8, 'Reserva 8', '900100208', '2026-05-04 17:00:46', 3, 8, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(9, 'Reserva 9', '900100209', '2026-05-06 12:00:46', 2, 6, 'Reserva generada automáticamente', 'confirmed', '2026-05-01 23:25:48', '2026-05-01 23:25:48'),
+	(10, 'Reserva 10', '9001002010', '2026-05-06 16:00:46', 6, 10, 'Reserva generada automáticamente', 'pending', '2026-05-01 23:25:48', '2026-05-01 23:25:48');
+
+-- Volcando estructura para tabla restaurante_db.sessions
+CREATE TABLE IF NOT EXISTS `sessions` (
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_activity` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sessions_user_id_index` (`user_id`),
+  KEY `sessions_last_activity_index` (`last_activity`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.sessions: ~13 rows (aproximadamente)
+DELETE FROM `sessions`;
+INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+	('5X50O16KaMSeZ8Uq9GtgmCC6OYCizgGVrfTbxSUL', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUElSRUxBS29vUmpkOVBOZHFMeHRFcXo0WFRGN0pIMUZxa2tlSThYMiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779279606),
+	('8lOFSPX269rT3KYRzQQopUnKEscrbEqwnp2JAUoL', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiMFJiMzVVR1owNEh5bnZpeFBGckpaZGRuTlVHazRuNjdNQ1RTY3NlMyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779377728),
+	('cicAabSaxcayUgebcoUW3uf3azCjKo93T1lEEZFa', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiSjF5WkVjVndhRjh5YzZGQXRKQVlmdUViakV2VmV1VEI1aDVjS200NiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMDoiaHR0cDovLzEyNy4wLjAuMTo4MDA1L3NldHRpbmdzIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779159357),
+	('FiiHtu8YmHHqw3yqsJ2ThOOlktiqITVIgZVzMNNJ', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoia3hyZzNPQkNTQVBrcUlOZTlQNlVwdXUyQ0poMUx2V09ObHhNbTkyYyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779154708),
+	('FoVwgO5Lc9FdxcC7tcXSKWKq6olkwDxV6AxbQic6', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiYWdkSWpxVmduQnpMVXNzTnpRZG1DMGdjbEdYa2hRUVBzS0pWNU1XZCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMDoiaHR0cDovLzEyNy4wLjAuMTo4MDA1L3NldHRpbmdzIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779164347),
+	('GcjJWyPLI6YoZatDLrclQHjawyJIrOs2DV6O4SKm', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUVVMbmhQTjdJeDJlSVA5UHpkOFViNkxRMGhiWVZvSVBNRG1DWm5YTiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMDoiaHR0cDovLzEyNy4wLjAuMTo4MDA1L3NldHRpbmdzIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNS9zZXR0aW5ncyI7czo1OiJyb3V0ZSI7czoxNDoic2V0dGluZ3MuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779294579),
+	('Lr8dLUKkeNxV2f3iB7rxIIp1K9H5atNHq7JwgKGo', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidHdVNEpFdTlzVjFxQVRYUDZCZDJMbEhGWFBWQlZQMWUyNUNoOHQ3UiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779328425),
+	('LZaLnJB3da4bvpcCnPMaztzuXN0TsJXoOQ8MsaY4', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQ2w4UGdCNnU1d2gwTFpOUmdtblA5WUNmcEVtcFlMclZYUlZ4eDNUdSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNS9sb2dpbiI7czo1OiJyb3V0ZSI7czo1OiJsb2dpbiI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1779456084),
+	('moKGa0c4R4vef9KVRMzS4qtCoS8mOkYGxk2aCQ5G', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRFBKMVhsaHozdzNoemxVVm5Bb3JzN3M5bDNlY2F5U0pHd3VqN0NEdiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779410313),
+	('NUOzulFZgcX3G2es8imISyHLJzev2eqNDgDLBACi', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiMnlmRlgza3NadDgwQ2U0TjhWRERIYlE5QUk4R1RhVlVKaWdBNkRZaSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779225635),
+	('OJUeTCe5M3WjCF9VbOECh4sMLywch044Humq9sSD', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiV3VLTktYM01OZUZFaEpINEVRUlNHQTJDUjhvT0FJT21abnFMRnlHMiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779324159),
+	('pr1K4BTMWz77QGwPaTdEu5Cm59onl1sysihfpEeb', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRFpQWjhkN1ZpbE02Z3BsMzUzZHdBNEgzaTFlMnNMbGJXclZrWWJucyI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozMDoiaHR0cDovLzEyNy4wLjAuMTo4MDA1L3NldHRpbmdzIjt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779230458),
+	('sDD6G1QERvqWg8IPfVH5O8rX3egXKeGvzBNCvRbb', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUWFldElHbzU4TXdkU0lVY1hTOXB0NWtHVzFOdWlldzR1NXJMd09nYSI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDA1Ijt9czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwNSI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779193048);
+
+-- Volcando estructura para tabla restaurante_db.settings
+CREATE TABLE IF NOT EXISTS `settings` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `settings_key_unique` (`key`)
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.settings: ~24 rows (aproximadamente)
+DELETE FROM `settings`;
+INSERT INTO `settings` (`id`, `key`, `value`, `created_at`, `updated_at`) VALUES
+	(1, 'company_name', 'Mi Restaurante VIP', '2025-12-25 23:24:03', '2026-05-17 23:28:27'),
+	(2, 'company_address', 'Av. Gastronómica 123, Lima', '2025-12-25 23:24:03', '2025-12-25 23:24:03'),
+	(3, 'company_phone', '(01) 555-9999', '2025-12-25 23:24:03', '2026-05-17 23:28:27'),
+	(4, 'ticket_footer', '¡Gracias por su preferencia! Vuelva pronto.', '2025-12-25 23:24:03', '2025-12-25 23:24:03'),
+	(5, 'currency_symbol', 'S/', '2025-12-25 23:24:03', '2025-12-25 23:32:57'),
+	(6, 'company_logo', 'settings/mXzMEnLdJSGlUJRse0Rk9Masyx4vbEjPVUtpH8u3.png', '2025-12-25 23:32:57', '2026-05-01 17:54:51'),
+	(7, 'timezone', 'America/Lima', '2025-12-29 22:20:51', '2025-12-29 22:20:51'),
+	(8, 'monthly_goal', '8000', '2026-05-01 22:48:31', '2026-05-01 22:48:31'),
+	(9, 'sunat_ruc', '20000000001', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(10, 'sunat_razon_social', 'EMPRESA DEMO SAC', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(11, 'sunat_nombre_comercial', 'DEMO', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(12, 'sunat_direccion_fiscal', 'AV. PRINCIPAL 123', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(13, 'sunat_ubigeo', '150101', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(14, 'sunat_departamento', 'LIMA', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(15, 'sunat_provincia', 'LIMA', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(16, 'sunat_distrito', 'LIMA', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(17, 'sunat_urbanizacion', '-', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(18, 'sunat_codigo_pais', 'PE', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(19, 'sunat_igv_rate', '18', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(20, 'sunat_environment', 'beta', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(21, 'sunat_sol_user', 'MODDATOS', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(22, 'sunat_sol_pass', 'MODDATOS', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(23, 'sunat_cert_path', '', '2026-05-17 23:28:27', '2026-05-17 23:28:27'),
+	(24, 'sunat_cert_password', '', '2026-05-17 23:28:27', '2026-05-17 23:28:27');
+
+-- Volcando estructura para tabla restaurante_db.tables
+CREATE TABLE IF NOT EXISTS `tables` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `area_id` bigint unsigned NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `seats` int NOT NULL DEFAULT '4',
+  `status` enum('available','occupied','reserved') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'available',
+  `x_pos` int NOT NULL DEFAULT '0',
+  `y_pos` int NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `tables_area_id_foreign` (`area_id`),
+  CONSTRAINT `tables_area_id_foreign` FOREIGN KEY (`area_id`) REFERENCES `areas` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.tables: ~10 rows (aproximadamente)
+DELETE FROM `tables`;
+INSERT INTO `tables` (`id`, `area_id`, `name`, `seats`, `status`, `x_pos`, `y_pos`, `created_at`, `updated_at`) VALUES
+	(1, 1, 'Mesa 1', 4, 'occupied', 0, 0, '2026-05-01 23:25:48', '2026-05-01 23:25:51'),
+	(2, 1, 'Mesa 2', 4, 'occupied', 232, 248, '2026-05-01 23:25:48', '2026-05-03 05:48:50'),
+	(3, 1, 'Mesa 3', 4, 'occupied', 519, 30, '2026-05-01 23:25:48', '2026-05-03 05:48:50'),
+	(4, 1, 'Mesa 4', 4, 'available', 441, 249, '2026-05-01 23:25:48', '2026-05-03 05:48:50'),
+	(5, 1, 'Mesa 5', 4, 'available', 31, 253, '2026-05-01 23:25:48', '2026-05-03 05:48:50'),
+	(6, 1, 'Mesa 6', 4, 'available', 782, 158, '2026-05-01 23:25:48', '2026-05-03 05:48:50'),
+	(7, 2, 'T-1', 2, 'available', 127, 51, '2026-05-01 23:25:48', '2026-05-03 05:49:05'),
+	(8, 2, 'T-2', 2, 'available', 456, 111, '2026-05-01 23:25:48', '2026-05-03 05:49:05'),
+	(9, 2, 'T-3', 2, 'available', 82, 259, '2026-05-01 23:25:48', '2026-05-03 05:49:05'),
+	(10, 2, 'T-4', 2, 'available', 725, 169, '2026-05-01 23:25:48', '2026-05-03 05:49:05');
+
+-- Volcando estructura para tabla restaurante_db.users
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email_verified_at` timestamp NULL DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('admin','cashier','waiter','kitchen') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
+  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `users_email_unique` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Volcando datos para la tabla restaurante_db.users: ~10 rows (aproximadamente)
+DELETE FROM `users`;
+INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `role`, `remember_token`, `created_at`, `updated_at`) VALUES
+	(1, 'Administrador', 'admin@admin.com', NULL, '$2y$12$Pj1NGrRCTz5JQOha67xiaOkDsRjGXlE5gnRbRfvHl06FMRoj4L8sG', 'admin', NULL, '2025-12-25 21:31:47', '2025-12-28 07:55:29'),
+	(18, 'Cashier 1', 'cashier1@restaurante.com', NULL, '$2y$12$ZdXICpn/jwf5EifweL9ic.AUVr5H2W8ulUJeZhAmHU4DlKyBs85G6', 'cashier', NULL, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(19, 'Waiter 2', 'waiter2@restaurante.com', NULL, '$2y$12$Xx.sGHxkkcUDJyywR/gbTeVO4.klzt7rBPxufzp0kpOhJyMei3X.i', 'waiter', NULL, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(20, 'Kitchen 3', 'kitchen3@restaurante.com', NULL, '$2y$12$y0G8.dGOl/if3kCZDBGdBuyjVjv5i9sAxn4zUVRWYz3Bk8t1wqmKS', 'kitchen', NULL, '2026-05-01 23:25:46', '2026-05-01 23:25:46'),
+	(21, 'Waiter 4', 'waiter4@restaurante.com', NULL, '$2y$12$tt23jBCKsMK0wioGr.XTbOR0lpedsr2nufJmcw2lVxySvqA991s8S', 'waiter', NULL, '2026-05-01 23:25:47', '2026-05-01 23:25:47'),
+	(22, 'Cashier 5', 'cashier5@restaurante.com', NULL, '$2y$12$AvCSpEiw62qDtj6XgmnzDuC66U7ht7YtPN3Q/ou3qSIJG/oguKhWy', 'cashier', NULL, '2026-05-01 23:25:47', '2026-05-01 23:25:47'),
+	(23, 'Waiter 6', 'waiter6@restaurante.com', NULL, '$2y$12$g2nn8PonNogGoWTO2ozy0OMUAD7LRKdWAkCUKer00RzJHrdMNVUbW', 'waiter', NULL, '2026-05-01 23:25:47', '2026-05-01 23:25:47'),
+	(24, 'Kitchen 7', 'kitchen7@restaurante.com', NULL, '$2y$12$E4Hn5bDGoHAUOn8Uy0fxWeASfAOQ3pHnqbPzv0PHs6J6SUwEVeBoy', 'kitchen', NULL, '2026-05-01 23:25:47', '2026-05-01 23:25:47'),
+	(25, 'Waiter 8', 'waiter8@restaurante.com', NULL, '$2y$12$l1zxcu2/UeFnYbvpk5t6ce36b.tJRB/qa2qAbz3ynRRQdfTTsfixe', 'waiter', NULL, '2026-05-01 23:25:47', '2026-05-01 23:25:47'),
+	(26, 'Waiter 9', 'waiter9@restaurante.com', NULL, '$2y$12$vTBDF58x8AqM2lxaiAjOEe2OieGxM/PgO1lWw0D7fif4e6s4G.Hye', 'waiter', NULL, '2026-05-01 23:25:48', '2026-05-01 23:25:48');
+
+/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
+
+-- ============================================================
+-- BLOQUE 2/3: MIGRACION A DIAN (drop SUNAT + create DIAN)
+-- ============================================================
+USE `col_restaurante_db`;
+-- ============================================================
+-- INSTALADOR FACTURACION ELECTRONICA DIAN COLOMBIA
+-- ------------------------------------------------------------
+-- Este SQL hace TODO de una vez:
+--   1) Crea la base col_restaurante_db (si no existe)
+--   2) Aplica los cambios de esquema DIAN sobre las tablas existentes
+--      (asume que ya importaste bk_basededatos.sql previamente)
+--   3) Crea las tablas DIAN nuevas
+--   4) Inserta las claves DIAN por defecto en `settings`
+--
+-- USO (desde HeidiSQL o phpMyAdmin de Laragon):
+--   - Primero importa bk_basededatos.sql en col_restaurante_db
+--   - Luego importa este archivo en la misma BD
+--
+-- Si prefieres usar artisan migrate, NO ejecutes este SQL:
+--   php artisan migrate hace exactamente lo mismo.
+-- ============================================================
+
+-- (Linea huerfana "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+--  eliminada: era la cola de un CREATE DATABASE que ya no esta aqui
+--  porque la base se crea al inicio del archivo.)
+
+-- ------------------------------------------------------------
+-- 1) DROP del esquema SUNAT (si existe)
+-- ------------------------------------------------------------
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `credit_notes`;
+DROP TABLE IF EXISTS `daily_summaries`;
+DROP TABLE IF EXISTS `document_series`;
+
+-- Eliminar índice único de orders si existía
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.statistics
+                    WHERE table_schema = DATABASE()
+                      AND table_name   = 'orders'
+                      AND index_name   = 'orders_doc_serie_corr_unique');
+SET @sql := IF(@idx_exists > 0, 'ALTER TABLE `orders` DROP INDEX `orders_doc_serie_corr_unique`', 'SELECT 0;');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Eliminar columnas SUNAT una a una (idempotente)
+SET @cols := 'serie,correlativo,igv,total_gravada,total_exonerada,total_inafecta,total_gratuita,sunat_status,sunat_code,sunat_description,cdr_path,hash';
+DROP PROCEDURE IF EXISTS sp_drop_cols;
+DELIMITER //
+CREATE PROCEDURE sp_drop_cols(IN cols TEXT)
+BEGIN
+    DECLARE c VARCHAR(64);
+    DECLARE done INT DEFAULT 0;
+    DECLARE pos INT;
+
+    WHILE LENGTH(cols) > 0 DO
+        SET pos = LOCATE(',', cols);
+        IF pos = 0 THEN
+            SET c = cols;
+            SET cols = '';
+        ELSE
+            SET c = SUBSTRING(cols, 1, pos - 1);
+            SET cols = SUBSTRING(cols, pos + 1);
+        END IF;
+
+        SET @exists := (SELECT COUNT(*) FROM information_schema.columns
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'orders'
+                          AND column_name = c);
+        IF @exists > 0 THEN
+            SET @s := CONCAT('ALTER TABLE `orders` DROP COLUMN `', c, '`');
+            PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+        END IF;
+    END WHILE;
+END //
+DELIMITER ;
+CALL sp_drop_cols(@cols);
+DROP PROCEDURE IF EXISTS sp_drop_cols;
+
+-- Limpiar settings SUNAT y registros de migraciones eliminadas
+DELETE FROM `settings`  WHERE `key` LIKE 'sunat_%' OR `key` = 'igv_factor';
+DELETE FROM `migrations` WHERE migration IN (
+    '2026_05_17_120001_add_sunat_fields_to_orders_table',
+    '2026_05_17_120002_create_document_series_table',
+    '2026_05_17_120003_create_credit_notes_table',
+    '2026_05_17_120004_create_daily_summaries_table'
+);
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ------------------------------------------------------------
+-- 2) CREATE tablas DIAN
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dian_resolutions` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `environment` TINYINT UNSIGNED NOT NULL DEFAULT 2,
+    `numero_resolucion` VARCHAR(30) NOT NULL,
+    `fecha_resolucion` DATE NULL,
+    `prefijo` VARCHAR(10) NOT NULL DEFAULT 'SETP',
+    `rango_desde` BIGINT UNSIGNED NOT NULL,
+    `rango_hasta` BIGINT UNSIGNED NOT NULL,
+    `vigencia_desde` DATE NULL,
+    `vigencia_hasta` DATE NULL,
+    `clave_tecnica` VARCHAR(150) NULL,
+    `consecutivo_actual` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Agregar columnas DIAN a orders (idempotente)
+DROP PROCEDURE IF EXISTS sp_add_col_orders;
+DELIMITER //
+CREATE PROCEDURE sp_add_col_orders(IN colName VARCHAR(64), IN colDef TEXT)
+BEGIN
+    SET @exists := (SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_schema = DATABASE() AND table_name='orders' AND column_name = colName);
+    IF @exists = 0 THEN
+        SET @s := CONCAT('ALTER TABLE `orders` ADD COLUMN `', colName, '` ', colDef);
+        PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
+    END IF;
+END //
+DELIMITER ;
+
+CALL sp_add_col_orders('dian_prefijo',         "VARCHAR(10) NULL AFTER `document_type`");
+CALL sp_add_col_orders('dian_numero',          "BIGINT UNSIGNED NULL AFTER `dian_prefijo`");
+CALL sp_add_col_orders('dian_resolution_id',   "BIGINT UNSIGNED NULL AFTER `dian_numero`");
+CALL sp_add_col_orders('subtotal',             "DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `total`");
+CALL sp_add_col_orders('iva',                  "DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `subtotal`");
+CALL sp_add_col_orders('ico',                  "DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `iva`");
+CALL sp_add_col_orders('descuento_total',      "DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `ico`");
+CALL sp_add_col_orders('total_a_pagar',        "DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `descuento_total`");
+CALL sp_add_col_orders('client_tipo_documento',"VARCHAR(5) NULL AFTER `client_document`");
+CALL sp_add_col_orders('client_dv',            "VARCHAR(2) NULL AFTER `client_tipo_documento`");
+CALL sp_add_col_orders('client_email',         "VARCHAR(255) NULL AFTER `client_dv`");
+CALL sp_add_col_orders('client_phone',         "VARCHAR(40) NULL AFTER `client_email`");
+CALL sp_add_col_orders('client_address',       "VARCHAR(255) NULL AFTER `client_phone`");
+CALL sp_add_col_orders('client_city_code',     "VARCHAR(10) NULL AFTER `client_address`");
+CALL sp_add_col_orders('client_dept_code',     "VARCHAR(10) NULL AFTER `client_city_code`");
+CALL sp_add_col_orders('dian_status',          "VARCHAR(30) NOT NULL DEFAULT 'PENDING' AFTER `client_dept_code`");
+CALL sp_add_col_orders('cufe',                 "VARCHAR(96) NULL AFTER `dian_status`");
+CALL sp_add_col_orders('dian_zip_id',          "VARCHAR(50) NULL AFTER `cufe`");
+CALL sp_add_col_orders('dian_response_code',   "VARCHAR(10) NULL AFTER `dian_zip_id`");
+CALL sp_add_col_orders('dian_description',     "TEXT NULL AFTER `dian_response_code`");
+CALL sp_add_col_orders('dian_errors',          "TEXT NULL AFTER `dian_description`");
+CALL sp_add_col_orders('xml_path',             "VARCHAR(255) NULL AFTER `dian_errors`");
+CALL sp_add_col_orders('ar_path',              "VARCHAR(255) NULL AFTER `xml_path`");
+CALL sp_add_col_orders('pdf_path',             "VARCHAR(255) NULL AFTER `ar_path`");
+CALL sp_add_col_orders('qr_url',               "VARCHAR(500) NULL AFTER `pdf_path`");
+CALL sp_add_col_orders('sent_at',              "TIMESTAMP NULL AFTER `qr_url`");
+CALL sp_add_col_orders('accepted_at',          "TIMESTAMP NULL AFTER `sent_at`");
+DROP PROCEDURE IF EXISTS sp_add_col_orders;
+
+-- Indice único prefijo+numero (si aún no existe)
+SET @idx_exists := (SELECT COUNT(*) FROM information_schema.statistics
+                    WHERE table_schema = DATABASE() AND table_name='orders'
+                      AND index_name='orders_dian_prefijo_numero_unique');
+SET @sql := IF(@idx_exists = 0,
+               "ALTER TABLE `orders` ADD UNIQUE KEY `orders_dian_prefijo_numero_unique` (`dian_prefijo`,`dian_numero`)",
+               "SELECT 0;");
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- FK a dian_resolutions
+SET @fk_exists := (SELECT COUNT(*) FROM information_schema.table_constraints
+                   WHERE table_schema = DATABASE() AND table_name='orders'
+                     AND constraint_name='orders_dian_resolution_id_foreign');
+SET @sql := IF(@fk_exists = 0,
+               "ALTER TABLE `orders` ADD CONSTRAINT `orders_dian_resolution_id_foreign`
+                FOREIGN KEY (`dian_resolution_id`) REFERENCES `dian_resolutions`(`id`) ON DELETE SET NULL",
+               "SELECT 0;");
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+CREATE TABLE IF NOT EXISTS `dian_credit_notes` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `order_id` BIGINT UNSIGNED NOT NULL,
+    `prefijo` VARCHAR(10) NOT NULL,
+    `numero` BIGINT UNSIGNED NOT NULL,
+    `dian_resolution_id` BIGINT UNSIGNED NULL,
+    `reason_code` TINYINT UNSIGNED NOT NULL,
+    `reason_description` VARCHAR(255) NOT NULL,
+    `subtotal` DECIMAL(14,2) NOT NULL DEFAULT 0,
+    `iva` DECIMAL(14,2) NOT NULL DEFAULT 0,
+    `total` DECIMAL(14,2) NOT NULL DEFAULT 0,
+    `dian_status` VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    `cude` VARCHAR(96) NULL,
+    `dian_zip_id` VARCHAR(50) NULL,
+    `dian_response_code` VARCHAR(10) NULL,
+    `dian_description` TEXT NULL,
+    `dian_errors` TEXT NULL,
+    `xml_path` VARCHAR(255) NULL,
+    `ar_path` VARCHAR(255) NULL,
+    `pdf_path` VARCHAR(255) NULL,
+    `qr_url` VARCHAR(500) NULL,
+    `sent_at` TIMESTAMP NULL,
+    `accepted_at` TIMESTAMP NULL,
+    `user_id` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    UNIQUE KEY `dian_credit_notes_prefijo_numero_unique`(`prefijo`,`numero`),
+    CONSTRAINT `dian_credit_notes_order_id_foreign`
+        FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `dian_credit_notes_dian_resolution_id_foreign`
+        FOREIGN KEY (`dian_resolution_id`) REFERENCES `dian_resolutions`(`id`) ON DELETE SET NULL,
+    CONSTRAINT `dian_credit_notes_user_id_foreign`
+        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `dian_events` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `documentable_type` VARCHAR(255) NOT NULL,
+    `documentable_id`   BIGINT UNSIGNED NOT NULL,
+    `event_type` VARCHAR(40) NOT NULL,
+    `response_code` VARCHAR(10) NULL,
+    `description` TEXT NULL,
+    `request_payload` LONGTEXT NULL,
+    `response_payload` LONGTEXT NULL,
+    `user_id` BIGINT UNSIGNED NULL,
+    `created_at` TIMESTAMP NULL,
+    `updated_at` TIMESTAMP NULL,
+    KEY `dian_events_morph_idx`(`documentable_type`,`documentable_id`),
+    CONSTRAINT `dian_events_user_id_foreign`
+        FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- 3) Seed de settings DIAN por defecto
+-- ------------------------------------------------------------
+INSERT INTO `settings` (`key`,`value`,`created_at`,`updated_at`) VALUES
+    ('dian_company_nit','',NOW(),NOW()),
+    ('dian_company_dv','',NOW(),NOW()),
+    ('dian_company_razon_social','',NOW(),NOW()),
+    ('dian_company_nombre_comercial','',NOW(),NOW()),
+    ('dian_company_tipo_documento','31',NOW(),NOW()),
+    ('dian_company_tipo_persona','1',NOW(),NOW()),
+    ('dian_company_regimen','49',NOW(),NOW()),
+    ('dian_company_responsabilidad','R-99-PN',NOW(),NOW()),
+    ('dian_company_address','',NOW(),NOW()),
+    ('dian_company_city_code','11001',NOW(),NOW()),
+    ('dian_company_dept_code','11',NOW(),NOW()),
+    ('dian_company_country_code','CO',NOW(),NOW()),
+    ('dian_company_phone','',NOW(),NOW()),
+    ('dian_company_email','',NOW(),NOW()),
+    ('dian_company_actividad_economica','5611',NOW(),NOW()),
+    ('dian_company_municipio_nombre','BOGOTA',NOW(),NOW()),
+    ('dian_environment','2',NOW(),NOW()),
+    ('dian_test_set_id','',NOW(),NOW()),
+    ('dian_software_id','',NOW(),NOW()),
+    ('dian_software_pin','',NOW(),NOW()),
+    ('dian_cert_path','',NOW(),NOW()),
+    ('dian_cert_password','',NOW(),NOW()),
+    ('iva_rate','19',NOW(),NOW()),
+    ('ico_rate','0',NOW(),NOW())
+ON DUPLICATE KEY UPDATE `updated_at`=NOW();
+
+-- ------------------------------------------------------------
+-- 4) Registrar migraciones DIAN como ya ejecutadas (para que
+--    artisan migrate NO las vuelva a aplicar después)
+-- ------------------------------------------------------------
+SET @batch := IFNULL((SELECT MAX(batch) FROM migrations), 0) + 1;
+INSERT IGNORE INTO `migrations`(`migration`,`batch`) VALUES
+    ('2026_05_22_180000_drop_sunat_schema', @batch),
+    ('2026_05_22_180001_create_dian_resolutions_table', @batch),
+    ('2026_05_22_180002_add_dian_fields_to_orders_table', @batch),
+    ('2026_05_22_180003_create_dian_credit_notes_table', @batch),
+    ('2026_05_22_180004_create_dian_events_table', @batch),
+    ('2026_05_22_180005_seed_dian_default_settings', @batch);
+
+-- ============================================================
+-- LISTO. Ahora entra al sistema y configura Settings > DIAN.
+-- ============================================================
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================
+-- LISTO. Resultado: col_restaurante_db con esquema DIAN.
+-- ============================================================
